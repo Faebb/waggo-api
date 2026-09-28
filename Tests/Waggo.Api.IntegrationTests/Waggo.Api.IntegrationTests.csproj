@@ -9,7 +9,7 @@
     <PackageReference Include="Testcontainers.PostgreSql" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Waggo.Api\Waggo.Api.csproj" />
+    <ProjectReference Include="..\..\Waggo.Api\Waggo.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

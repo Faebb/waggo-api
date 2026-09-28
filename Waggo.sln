@@ -15,13 +15,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Api", "Waggo.Api\Wagg
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Domain.UnitTests", "Waggo.Domain.UnitTests\Waggo.Domain.UnitTests.csproj", "{D24334FC-FC26-4059-85D1-F44AE5DCF10B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Domain.UnitTests", "Tests\Waggo.Domain.UnitTests\Waggo.Domain.UnitTests.csproj", "{D24334FC-FC26-4059-85D1-F44AE5DCF10B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Application.UnitTests", "Waggo.Application.UnitTests\Waggo.Application.UnitTests.csproj", "{491259D7-37BF-453A-9290-2DF753A7225E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Application.UnitTests", "Tests\Waggo.Application.UnitTests\Waggo.Application.UnitTests.csproj", "{491259D7-37BF-453A-9290-2DF753A7225E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Api.IntegrationTests", "Waggo.Api.IntegrationTests\Waggo.Api.IntegrationTests.csproj", "{6A6629AF-813B-437A-AA32-DAEA22C9A5A2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.Api.IntegrationTests", "Tests\Waggo.Api.IntegrationTests\Waggo.Api.IntegrationTests.csproj", "{6A6629AF-813B-437A-AA32-DAEA22C9A5A2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.ArchitectureTests", "Waggo.ArchitectureTests\Waggo.ArchitectureTests.csproj", "{DC49E88D-3F38-4D65-BD1B-DAAE69E1946D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Waggo.ArchitectureTests", "Tests\Waggo.ArchitectureTests\Waggo.ArchitectureTests.csproj", "{DC49E88D-3F38-4D65-BD1B-DAAE69E1946D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -31,13 +31,13 @@ Waggo.sln
 │  ├─ Waggo.Application     → casos de uso (queries/commands + handlers), puertos
 │  ├─ Waggo.Infrastructure  → EF Core + Npgsql, adaptadores externos
 │  └─ Waggo.Api             → endpoints, DI, configuración
-└─ Tests/ (solution folder)
+└─ Tests/                        (carpeta física + carpeta de solución)
    ├─ Waggo.Domain.UnitTests
    ├─ Waggo.Application.UnitTests
    ├─ Waggo.Api.IntegrationTests   (requiere Docker)
    └─ Waggo.ArchitectureTests      (reglas de dependencia entre capas)
 ```
-Cada capa es un proyecto en la raíz del repositorio; `Layers` y `Tests` son solo carpetas de solución (virtuales) en Visual Studio / Rider.
+Cada capa es un proyecto en la raíz del repositorio (agrupadas en la carpeta de solución `Layers`); todos los proyectos de pruebas viven en la carpeta `Tests/`.
 Dentro de cada capa el código se agrupa **por módulo** (`Pricing`, `Identity`, `Walks`, `Tracking`, `Payments`...) para poder extraer módulos a microservicios más adelante (RNF-009).
 
 Regla de dependencia: `Api → Infrastructure → Application → Domain`. La verifica `Waggo.ArchitectureTests`.
@@ -50,7 +50,7 @@ Regla de dependencia: `Api → Infrastructure → Application → Domain`. La ve
 ```bash
 dotnet test                                              # todo
 dotnet test --filter "FullyQualifiedName!~IntegrationTests"   # loop rápido (sin Docker)
-dotnet watch test --project Waggo.Domain.UnitTests
+dotnet watch test --project Tests/Waggo.Domain.UnitTests
 ```
 
 Commits: [Conventional Commits](https://www.conventionalcommits.org/) — `test(pricing): …` → `feat(pricing): …` → `refactor(pricing): …`.

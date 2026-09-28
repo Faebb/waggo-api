@@ -5,14 +5,12 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Shouldly" />
-    <PackageReference Include="NSubstitute" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Waggo.Application\Waggo.Application.csproj" />
+    <ProjectReference Include="..\..\Waggo.Domain\Waggo.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="Shouldly" />
-    <Using Include="NSubstitute" />
   </ItemGroup>
 </Project>
