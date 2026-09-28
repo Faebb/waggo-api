@@ -13,7 +13,7 @@ public sealed record WalkDuration
 
     public int Minutes { get; }
 
-    public static Result<WalkDuration> Create(int minutes)
+    public static WaggoResponse<WalkDuration> Create(int minutes)
     {
         if (minutes is < MinMinutes or > MaxMinutes || minutes % StepMinutes != 0)
         {

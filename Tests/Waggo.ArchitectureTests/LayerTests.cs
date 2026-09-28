@@ -11,7 +11,7 @@ public class LayerTests
     private const string InfrastructureNs = "Waggo.Infrastructure";
     private const string ApiNs = "Waggo.Api";
 
-    private static readonly Assembly Domain = typeof(Waggo.Domain.Common.Result).Assembly;
+    private static readonly Assembly Domain = typeof(Waggo.Domain.Common.WaggoResponse).Assembly;
     private static readonly Assembly Application = typeof(Waggo.Application.DependencyInjection).Assembly;
     private static readonly Assembly Infrastructure = typeof(Waggo.Infrastructure.DependencyInjection).Assembly;
 

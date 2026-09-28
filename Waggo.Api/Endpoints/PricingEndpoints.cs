@@ -1,4 +1,6 @@
+using Waggo.Api.Common.Responses;
 using Waggo.Application.Abstractions;
+using Waggo.Application.Common.Logging;
 using Waggo.Application.Pricing.QuoteFare;
 using Waggo.Domain.Pricing;
 
@@ -15,14 +17,15 @@ internal static class PricingEndpoints
                 WalkType walkType,
                 int durationMinutes,
                 IQueryHandler<QuoteFareQuery, FareQuoteResponse> handler,
+                ILogger<QuoteFareQuery> logger,
                 CancellationToken ct) =>
             {
-                var result = await handler.HandleAsync(new QuoteFareQuery(walkType, durationMinutes), ct).ConfigureAwait(false);
-                return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+                var response = await handler.HandleAsync(new QuoteFareQuery(walkType, durationMinutes), ct);
+                return response.WriteLogs(logger, "QuoteFare").ToApiResult();
             })
             .WithName("QuoteFare")
-            .Produces<FareQuoteResponse>()
-            .ProducesProblem(StatusCodes.Status400BadRequest);
+            .Produces<WaggoApiResponse<FareQuoteResponse>>()
+            .Produces<WaggoApiResponse<FareQuoteResponse>>(StatusCodes.Status400BadRequest);
 
         return routes;
     }

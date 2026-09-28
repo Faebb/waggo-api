@@ -8,26 +8,44 @@ namespace Waggo.Application.Pricing.QuoteFare;
 internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvider)
     : IQueryHandler<QuoteFareQuery, FareQuoteResponse>
 {
-    public async Task<Result<FareQuoteResponse>> HandleAsync(QuoteFareQuery query, CancellationToken cancellationToken)
+    public async Task<WaggoResponse<FareQuoteResponse>> HandleAsync(QuoteFareQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        var response = new WaggoResponse<FareQuoteResponse>();
 
         var duration = WalkDuration.Create(query.DurationMinutes);
-        if (duration.IsFailure)
+        response.ConcatStacks(duration);
+        if (response.IsFailure)
         {
-            return duration.Error;
+            return response;
         }
 
-        var table = await pricingTableProvider.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        var table = await pricingTableProvider.GetCurrentAsync(cancellationToken);
+        response.ConcatStacks(table);
+        if (response.IsFailure)
+        {
+            return response;
+        }
 
-        return FareCalculator
-            .Calculate(table, query.WalkType, duration.Value)
-            .Map(fare => new FareQuoteResponse(
-                query.WalkType.ToString(),
-                duration.Value.Minutes,
-                fare.Total.Currency,
-                fare.Total.Amount,
-                fare.Commission.Amount,
-                fare.WalkerPayout.Amount));
+        var fare = FareCalculator.Calculate(table.Value, query.WalkType, duration.Value);
+        response.ConcatStacks(fare);
+        if (response.IsFailure)
+        {
+            return response;
+        }
+
+        var quote = fare.Value;
+        response.AddInfo(
+            PricingMessages.FareQuoted,
+            $"Fare quoted: {query.WalkType} {duration.Value.Minutes} min = {quote.Total}",
+            MessageVisibility.Internal);
+
+        return response.SetValue(new FareQuoteResponse(
+            query.WalkType.ToString(),
+            duration.Value.Minutes,
+            quote.Total.Currency,
+            quote.Total.Amount,
+            quote.Commission.Amount,
+            quote.WalkerPayout.Amount));
     }
 }

@@ -50,6 +50,6 @@ public class FareCalculatorTests
         var result = FareCalculator.Calculate(table, WalkType.Group, WalkDuration.Create(60).Value);
 
         result.IsFailure.ShouldBeTrue();
-        result.Error.Code.ShouldBe("Pricing.WalkTypeNotPriced");
+        result.HasError("Pricing.WalkTypeNotPriced").ShouldBeTrue();
     }
 }

@@ -1,11 +1,12 @@
 namespace Waggo.Domain.Common;
 
-/// <summary>Business error with a stable code (used by clients) and a human-readable message.</summary>
-public sealed record Error(string Code, string Message, ErrorType Type = ErrorType.Validation)
-{
-    public static readonly Error None = new(string.Empty, string.Empty, ErrorType.None);
-}
+/// <summary>
+/// Catalog entry for a business error: stable code (clients depend on it), message and kind.
+/// Define them as static members per module (e.g. <c>PricingErrors</c>) and add them with <see cref="WaggoResponse.AddError(Error, string?)"/>.
+/// </summary>
+public sealed record Error(string Code, string Message, ErrorType Type = ErrorType.Validation);
 
+/// <summary>Kind of error. The API maps it to the HTTP status code.</summary>
 public enum ErrorType
 {
     None,
@@ -13,4 +14,6 @@ public enum ErrorType
     NotFound,
     Conflict,
     Unauthorized,
+    Forbidden,
+    Unexpected,
 }

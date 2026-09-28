@@ -9,7 +9,7 @@ public sealed record CommissionRate
 
     public decimal Value { get; }
 
-    public static Result<CommissionRate> Create(decimal value)
+    public static WaggoResponse<CommissionRate> Create(decimal value)
     {
         if (value is < 0m or > 1m)
         {

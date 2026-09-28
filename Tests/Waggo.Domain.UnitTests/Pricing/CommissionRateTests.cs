@@ -16,5 +16,5 @@ public class CommissionRateTests
     [Theory]
     [MemberData(nameof(InvalidRates))]
     public void Create_OutOfRange_Fails(decimal value) =>
-        CommissionRate.Create(value).Error.ShouldBe(PricingErrors.InvalidCommissionRate);
+        CommissionRate.Create(value).HasError(PricingErrors.InvalidCommissionRate.Code).ShouldBeTrue();
 }

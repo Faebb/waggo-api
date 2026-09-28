@@ -34,12 +34,25 @@ Waggo.sln
    ├─ Waggo.Domain.UnitTests
    ├─ Waggo.Application.UnitTests
    ├─ Waggo.Api.IntegrationTests   (requiere Docker)
+   ├─ Waggo.Api.UnitTests          (mapeo a WaggoApiResponse)
    └─ Waggo.ArchitectureTests      (reglas de dependencia entre capas)
 ```
 Cada capa es un proyecto en la raíz del repositorio (sin agrupar en ninguna carpeta); todos los proyectos de pruebas viven en la carpeta `Tests/`.
 Dentro de cada capa el código se agrupa **por módulo** (`Pricing`, `Identity`, `Walks`, `Tracking`, `Payments`...) para poder extraer módulos a microservicios más adelante (RNF-009).
 
 Regla de dependencia: `Api → Infrastructure → Application → Domain`. La verifica `Waggo.ArchitectureTests`.
+
+## Respuestas y logging (ADR-007)
+- Toda operación devuelve `WaggoResponse<T>` (pilas `Errors`, `Warnings`, `Infos`); se encadenan con `ConcatStacks`.
+- Los métodos no escriben al log: quien llama decide con `response.WriteLogs(logger, "Operacion")`. Logging con **Serilog** (sección `Serilog` de `appsettings.json`).
+- Todo endpoint responde `WaggoApiResponse<T>`: `success`, `data`, `pagination` (`null` si no pagina), `errors`, `warnings`, `infos`, `traceId`.
+
+```json
+{ "success": false, "data": null, "pagination": null,
+  "errors": [{ "code": "Pricing.InvalidDuration", "message": "..." }],
+  "warnings": [], "infos": [], "traceId": "..." }
+```
+Guía completa en el vault: `03 Desarrollo/Convención de respuestas y logging.md`.
 
 ## Flujo TDD
 1. 🔴 Escribe la prueba que falla (aceptación en `IntegrationTests`, luego unitarias en `Domain`/`Application`).
@@ -57,8 +70,10 @@ Commits: [Conventional Commits](https://www.conventionalcommits.org/) — `test(
 ## Slice de ejemplo: cotización de tarifa (RF-019 / RF-018)
 `GET /api/v1/pricing/quote?walkType=Individual&durationMinutes=60`
 ```json
-{ "walkType": "Individual", "durationMinutes": 60, "currency": "COP",
-  "total": 23000, "commission": 4600, "walkerPayout": 18400 }
+{ "success": true,
+  "data": { "walkType": "Individual", "durationMinutes": 60, "currency": "COP",
+            "total": 23000, "commission": 4600, "walkerPayout": 18400 },
+  "pagination": null, "errors": [], "warnings": [], "infos": [], "traceId": "..." }
 ```
 Las tarifas y la comisión son **provisionales** y se configuran en `appsettings.json › Pricing`.
 

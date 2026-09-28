@@ -8,7 +8,7 @@ namespace Waggo.Domain.Pricing;
 /// </summary>
 public static class FareCalculator
 {
-    public static Result<FareBreakdown> Calculate(PricingTable table, WalkType walkType, WalkDuration duration)
+    public static WaggoResponse<FareBreakdown> Calculate(PricingTable table, WalkType walkType, WalkDuration duration)
     {
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(duration);
