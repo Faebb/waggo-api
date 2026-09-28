@@ -1,0 +1,10 @@
+@api = http://localhost:5080
+
+### Health
+GET {{api}}/health
+
+### RF-019 — Fare quote (OK)
+GET {{api}}/api/v1/pricing/quote?walkType=Individual&durationMinutes=60
+
+### RF-019 — Invalid duration (400)
+GET {{api}}/api/v1/pricing/quote?walkType=Individual&durationMinutes=20

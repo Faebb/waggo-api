@@ -1,0 +1,35 @@
+name: waggo
+
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    container_name: waggo-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-waggo}
+      POSTGRES_USER: ${POSTGRES_USER:-waggo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-locally}
+    ports:
+      - "5432:5432"
+    volumes:
+      - waggo-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    image: waggo-api:local
+    container_name: waggo-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__Waggo: Host=db;Port=5432;Database=${POSTGRES_DB:-waggo};Username=${POSTGRES_USER:-waggo};Password=${POSTGRES_PASSWORD:-change-me-locally}
+    ports:
+      - "8080:8080"
+
+volumes:
+  waggo-db-data:
