@@ -26,18 +26,17 @@ OpenAPI: `/openapi/v1.json`.
 ## Arquitectura
 ```
 Waggo.sln
-├─ Layers/ (solution folder)
-│  ├─ Waggo.Domain          → entidades, value objects, reglas (sin dependencias)
-│  ├─ Waggo.Application     → casos de uso (queries/commands + handlers), puertos
-│  ├─ Waggo.Infrastructure  → EF Core + Npgsql, adaptadores externos
-│  └─ Waggo.Api             → endpoints, DI, configuración
+├─ Waggo.Domain          → entidades, value objects, reglas (sin dependencias)
+├─ Waggo.Application     → casos de uso (queries/commands + handlers), puertos
+├─ Waggo.Infrastructure  → EF Core + Npgsql, adaptadores externos
+├─ Waggo.Api             → endpoints, DI, configuración
 └─ Tests/                        (carpeta física + carpeta de solución)
    ├─ Waggo.Domain.UnitTests
    ├─ Waggo.Application.UnitTests
    ├─ Waggo.Api.IntegrationTests   (requiere Docker)
    └─ Waggo.ArchitectureTests      (reglas de dependencia entre capas)
 ```
-Cada capa es un proyecto en la raíz del repositorio (agrupadas en la carpeta de solución `Layers`); todos los proyectos de pruebas viven en la carpeta `Tests/`.
+Cada capa es un proyecto en la raíz del repositorio (sin agrupar en ninguna carpeta); todos los proyectos de pruebas viven en la carpeta `Tests/`.
 Dentro de cada capa el código se agrupa **por módulo** (`Pricing`, `Identity`, `Walks`, `Tracking`, `Payments`...) para poder extraer módulos a microservicios más adelante (RNF-009).
 
 Regla de dependencia: `Api → Infrastructure → Application → Domain`. La verifica `Waggo.ArchitectureTests`.
