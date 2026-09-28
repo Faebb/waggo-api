@@ -7,7 +7,7 @@
     <PackageReference Include="Shouldly" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Waggo.Domain\Waggo.Domain.csproj" />
+    <ProjectReference Include="..\Waggo.Domain\Waggo.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

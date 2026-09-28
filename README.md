@@ -19,23 +19,25 @@ curl "http://localhost:8080/api/v1/pricing/quote?walkType=Individual&durationMin
 Sin Docker para la API (solo la BD en contenedor):
 ```bash
 docker compose up -d db
-dotnet run --project src/Waggo.Api      # http://localhost:5080
+dotnet run --project Waggo.Api      # http://localhost:5080
 ```
 OpenAPI: `/openapi/v1.json`.
 
 ## Arquitectura
 ```
-src/
-  Waggo.Domain          → entidades, value objects, reglas (sin dependencias)
-  Waggo.Application     → casos de uso (queries/commands + handlers), puertos
-  Waggo.Infrastructure  → EF Core + Npgsql, adaptadores externos
-  Waggo.Api             → endpoints, DI, configuración
-tests/
-  Waggo.Domain.UnitTests
-  Waggo.Application.UnitTests
-  Waggo.Api.IntegrationTests   (requiere Docker)
-  Waggo.ArchitectureTests      (reglas de dependencia entre capas)
+Waggo.sln
+├─ Layers/ (solution folder)
+│  ├─ Waggo.Domain          → entidades, value objects, reglas (sin dependencias)
+│  ├─ Waggo.Application     → casos de uso (queries/commands + handlers), puertos
+│  ├─ Waggo.Infrastructure  → EF Core + Npgsql, adaptadores externos
+│  └─ Waggo.Api             → endpoints, DI, configuración
+└─ Tests/ (solution folder)
+   ├─ Waggo.Domain.UnitTests
+   ├─ Waggo.Application.UnitTests
+   ├─ Waggo.Api.IntegrationTests   (requiere Docker)
+   └─ Waggo.ArchitectureTests      (reglas de dependencia entre capas)
 ```
+Cada capa es un proyecto en la raíz del repositorio; `Layers` y `Tests` son solo carpetas de solución (virtuales) en Visual Studio / Rider.
 Dentro de cada capa el código se agrupa **por módulo** (`Pricing`, `Identity`, `Walks`, `Tracking`, `Payments`...) para poder extraer módulos a microservicios más adelante (RNF-009).
 
 Regla de dependencia: `Api → Infrastructure → Application → Domain`. La verifica `Waggo.ArchitectureTests`.
@@ -48,7 +50,7 @@ Regla de dependencia: `Api → Infrastructure → Application → Domain`. La ve
 ```bash
 dotnet test                                              # todo
 dotnet test --filter "FullyQualifiedName!~IntegrationTests"   # loop rápido (sin Docker)
-dotnet watch test --project tests/Waggo.Domain.UnitTests
+dotnet watch test --project Waggo.Domain.UnitTests
 ```
 
 Commits: [Conventional Commits](https://www.conventionalcommits.org/) — `test(pricing): …` → `feat(pricing): …` → `refactor(pricing): …`.
@@ -64,5 +66,5 @@ Las tarifas y la comisión son **provisionales** y se configuran en `appsettings
 ## Migraciones (EF Core)
 ```bash
 dotnet tool install --global dotnet-ef
-dotnet ef migrations add <Nombre> -p src/Waggo.Infrastructure -s src/Waggo.Api -o Persistence/Migrations
+dotnet ef migrations add <Nombre> -p Waggo.Infrastructure -s Waggo.Api -o Persistence/Migrations
 ```

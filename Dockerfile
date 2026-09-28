@@ -6,14 +6,18 @@ WORKDIR /src
 
 # Restore first (cached layer) — copy only project/props files
 COPY global.json Directory.Build.props Directory.Packages.props .editorconfig ./
-COPY src/Waggo.Domain/Waggo.Domain.csproj src/Waggo.Domain/
-COPY src/Waggo.Application/Waggo.Application.csproj src/Waggo.Application/
-COPY src/Waggo.Infrastructure/Waggo.Infrastructure.csproj src/Waggo.Infrastructure/
-COPY src/Waggo.Api/Waggo.Api.csproj src/Waggo.Api/
-RUN dotnet restore src/Waggo.Api/Waggo.Api.csproj
+COPY Waggo.Domain/Waggo.Domain.csproj Waggo.Domain/
+COPY Waggo.Application/Waggo.Application.csproj Waggo.Application/
+COPY Waggo.Infrastructure/Waggo.Infrastructure.csproj Waggo.Infrastructure/
+COPY Waggo.Api/Waggo.Api.csproj Waggo.Api/
+RUN dotnet restore Waggo.Api/Waggo.Api.csproj
 
-COPY src/ src/
-RUN dotnet publish src/Waggo.Api/Waggo.Api.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
+# Only the production layers (test projects are not copied into the image)
+COPY Waggo.Domain/ Waggo.Domain/
+COPY Waggo.Application/ Waggo.Application/
+COPY Waggo.Infrastructure/ Waggo.Infrastructure/
+COPY Waggo.Api/ Waggo.Api/
+RUN dotnet publish Waggo.Api/Waggo.Api.csproj -c Release -o /app/publish --no-restore /p:UseAppHost=false
 
 # ---------- runtime ----------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
