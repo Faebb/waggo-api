@@ -13,7 +13,7 @@ Backend de **Waggo — Plataforma Inteligente para Paseo Seguro de Perros**.
 ```bash
 cp .env.example .env
 docker compose up -d --build
-curl http://localhost:8080/health
+curl http://localhost:8080/health/ready
 curl "http://localhost:8080/api/v1/pricing/quote?walkType=Individual&durationMinutes=60"
 ```
 Sin Docker para la API (solo la BD en contenedor):
@@ -21,7 +21,7 @@ Sin Docker para la API (solo la BD en contenedor):
 docker compose up -d db
 dotnet run --project Waggo.Api      # http://localhost:5080
 ```
-OpenAPI: `/openapi/v1.json`.
+OpenAPI (solo Development): `/openapi/v1.json`. En Development no se necesita token: un usuario de desarrollo con todos los roles firma cada request (header `X-Dev-Roles` para probar otros roles).
 
 ## Arquitectura
 ```
