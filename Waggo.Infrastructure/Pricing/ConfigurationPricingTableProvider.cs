@@ -17,7 +17,7 @@ internal sealed class ConfigurationPricingTableProvider(IOptionsMonitor<PricingO
 
         WaggoResponse<CommissionRate> commission = CommissionRate.Create(o.CommissionRate);
         response.ConcatStacks(commission);
-        if (response.IsFailure)
+        if (!response.IsValid)
         {
             return Task.FromResult(response);
         }

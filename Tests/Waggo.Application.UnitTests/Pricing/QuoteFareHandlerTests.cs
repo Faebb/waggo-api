@@ -12,7 +12,7 @@ public class QuoteFareHandlerTests
 
     public QuoteFareHandlerTests()
     {
-        _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(WaggoResponse.Success(new PricingTable(
+        _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(WaggoResponse.FromValue(new PricingTable(
             "COP",
             [new WalkRate(WalkType.Individual, Money.Of(8000m, "COP"), Money.Of(250m, "COP"))],
             CommissionRate.Create(0.20m).Value,
@@ -29,7 +29,7 @@ public class QuoteFareHandlerTests
     {
         WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 60);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.IsValid.ShouldBeTrue();
         result.Value.ShouldBe(new FareQuoteResponse("Individual", 60, "COP", 23000m, 4600m, 18400m));
     }
 

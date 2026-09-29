@@ -5,7 +5,7 @@ namespace Waggo.Domain.Common;
 /// It carries three stacks — <see cref="Errors"/>, <see cref="Warnings"/> and <see cref="Infos"/> — that the
 /// operation fills instead of logging. The caller decides where the stacks are written to the log
 /// (see <c>WaggoResponseLogging.WriteLogs</c>) and uses <see cref="ConcatStacks"/> to carry the messages
-/// of the operations it calls. It is a failure as soon as it holds one error.
+/// of the operations it calls. It stops being valid (<see cref="IsValid"/>) as soon as it holds one error.
 /// </summary>
 public class WaggoResponse
 {
@@ -19,22 +19,22 @@ public class WaggoResponse
 
     public IReadOnlyList<WaggoMessage> Infos => _infos;
 
-    public bool IsSuccess => _errors.Count == 0;
-
-    public bool IsFailure => !IsSuccess;
+    /// <summary>True while the response has no errors. Warnings and infos do not affect it.</summary>
+    public bool IsValid => _errors.Count == 0;
 
     /// <summary>
-    /// Kind of the first error (drives the HTTP status). <see cref="ErrorType.None"/> when successful.
+    /// Kind of the first error (drives the HTTP status). <see cref="ErrorType.None"/> while valid.
     /// </summary>
     public ErrorType ErrorType => _errors.Count == 0 ? ErrorType.None : _errors[0].ErrorType;
 
-    public static WaggoResponse Success() => new();
+    /// <summary>Valid response that carries <paramref name="value"/>.</summary>
+    public static WaggoResponse<T> FromValue<T>(T value) => new WaggoResponse<T>().SetValue(value);
 
-    public static WaggoResponse<T> Success<T>(T value) => new WaggoResponse<T>().SetValue(value);
+    /// <summary>Invalid response with one error.</summary>
+    public static WaggoResponse FromError(Error error) => new WaggoResponse().AddError(error);
 
-    public static WaggoResponse Failure(Error error) => new WaggoResponse().AddError(error);
-
-    public static WaggoResponse<T> Failure<T>(Error error) => new WaggoResponse<T>().AddError(error);
+    /// <summary>Invalid response of type <typeparamref name="T"/> with one error.</summary>
+    public static WaggoResponse<T> FromError<T>(Error error) => new WaggoResponse<T>().AddError(error);
 
     public WaggoResponse AddError(Error error, string? field = null)
     {
@@ -115,16 +115,16 @@ public sealed class WaggoResponse<T> : WaggoResponse
 
     /// <summary>
     /// The value. Throws if the response failed or no value was set;
-    /// check <see cref="WaggoResponse.IsSuccess"/> first.
+    /// check <see cref="WaggoResponse.IsValid"/> first.
     /// </summary>
-    public T Value => IsSuccess && HasValue
+    public T Value => IsValid && HasValue
         ? _value!
-        : throw new InvalidOperationException(IsFailure
+        : throw new InvalidOperationException(!IsValid
             ? $"Cannot read the value of a failed response ({Errors[0]})."
             : "The response has no value.");
 
     /// <summary>The value or <c>default</c>; used when mapping to the API contract.</summary>
-    public T? ValueOrDefault => IsSuccess && HasValue ? _value : default;
+    public T? ValueOrDefault => IsValid && HasValue ? _value : default;
 
     public static implicit operator WaggoResponse<T>(T value) => new WaggoResponse<T>().SetValue(value);
 
@@ -185,6 +185,6 @@ public sealed class WaggoResponse<T> : WaggoResponse
     {
         ArgumentNullException.ThrowIfNull(map);
         WaggoResponse<TOut> result = ToResponse<TOut>();
-        return IsSuccess && HasValue ? result.SetValue(map(_value!)) : result;
+        return IsValid && HasValue ? result.SetValue(map(_value!)) : result;
     }
 }

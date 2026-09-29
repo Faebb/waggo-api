@@ -42,6 +42,6 @@ public sealed record PageRequest
             response.AddError(InvalidPageSize, "pageSize");
         }
 
-        return response.IsSuccess ? response.SetValue(new PageRequest(p, size)) : response;
+        return response.IsValid ? response.SetValue(new PageRequest(p, size)) : response;
     }
 }

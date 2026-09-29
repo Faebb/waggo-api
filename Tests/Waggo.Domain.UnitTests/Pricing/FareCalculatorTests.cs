@@ -54,7 +54,7 @@ public class FareCalculatorTests
 
         WaggoResponse<FareBreakdown> result = FareCalculator.Calculate(table, WalkType.Group, duration);
 
-        result.IsFailure.ShouldBeTrue();
+        result.IsValid.ShouldBeFalse();
         result.HasError("Pricing.WalkTypeNotPriced").ShouldBeTrue();
     }
 }

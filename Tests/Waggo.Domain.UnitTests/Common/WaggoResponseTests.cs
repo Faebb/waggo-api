@@ -7,11 +7,11 @@ public class WaggoResponseTests
     private static readonly Error s_someError = new("Test.Error", "Something went wrong", ErrorType.NotFound);
 
     [Fact]
-    public void New_HasEmptyStacks_AndIsSuccess()
+    public void New_HasEmptyStacks_AndIsValid()
     {
         WaggoResponse response = new WaggoResponse();
 
-        response.IsSuccess.ShouldBeTrue();
+        response.IsValid.ShouldBeTrue();
         response.Errors.ShouldBeEmpty();
         response.Warnings.ShouldBeEmpty();
         response.Infos.ShouldBeEmpty();
@@ -19,24 +19,24 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void AddError_MakesItAFailure_WithTheErrorType()
+    public void AddError_MakesItInvalid_WithTheErrorType()
     {
         WaggoResponse response = new WaggoResponse().AddError(s_someError, field: "id");
 
-        response.IsFailure.ShouldBeTrue();
+        response.IsValid.ShouldBeFalse();
         response.ErrorType.ShouldBe(ErrorType.NotFound);
         response.Errors.Single().Field.ShouldBe("id");
         response.HasError("Test.Error").ShouldBeTrue();
     }
 
     [Fact]
-    public void WarningsAndInfos_DoNotMakeItAFailure()
+    public void WarningsAndInfos_KeepItValid()
     {
         WaggoResponse response = new WaggoResponse()
             .AddWarning("W.1", "careful")
             .AddInfo("I.1", "fyi", MessageVisibility.Internal);
 
-        response.IsSuccess.ShouldBeTrue();
+        response.IsValid.ShouldBeTrue();
         response.Warnings.Single().Code.ShouldBe("W.1");
         response.Infos.Single().Visibility.ShouldBe(MessageVisibility.Internal);
     }
@@ -82,21 +82,21 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void Generic_ImplicitFromValue_IsSuccessWithValue()
+    public void Generic_ImplicitFromValue_IsValidWithValue()
     {
         WaggoResponse<int> response = 42;
 
-        response.IsSuccess.ShouldBeTrue();
+        response.IsValid.ShouldBeTrue();
         response.HasValue.ShouldBeTrue();
         response.Value.ShouldBe(42);
     }
 
     [Fact]
-    public void Generic_ImplicitFromError_IsFailure_AndValueThrows()
+    public void Generic_ImplicitFromError_IsNotValid_AndValueThrows()
     {
         WaggoResponse<int> response = s_someError;
 
-        response.IsFailure.ShouldBeTrue();
+        response.IsValid.ShouldBeFalse();
         response.ValueOrDefault.ShouldBe(0);
         Should.Throw<InvalidOperationException>(() => response.Value);
     }
@@ -114,7 +114,7 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void Map_OnSuccess_TransformsValue_AndKeepsStacks()
+    public void Map_WhenValid_TransformsValue_AndKeepsStacks()
     {
         WaggoResponse<int> response = new WaggoResponse<int>().AddWarning("W.1", "careful").SetValue(21);
 
@@ -125,13 +125,13 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void Map_OnFailure_PropagatesErrors_WithoutValue()
+    public void Map_WhenInvalid_PropagatesErrors_WithoutValue()
     {
         WaggoResponse<int> response = s_someError;
 
         WaggoResponse<string> mapped = response.Map(x => x.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
-        mapped.IsFailure.ShouldBeTrue();
+        mapped.IsValid.ShouldBeFalse();
         mapped.HasValue.ShouldBeFalse();
         mapped.HasError("Test.Error").ShouldBeTrue();
     }
@@ -145,6 +145,24 @@ public class WaggoResponseTests
 
         other.HasError("Test.Error").ShouldBeTrue();
         other.HasValue.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void FromValue_IsValidWithValue()
+    {
+        WaggoResponse<int> response = WaggoResponse.FromValue(7);
+
+        response.IsValid.ShouldBeTrue();
+        response.Value.ShouldBe(7);
+    }
+
+    [Fact]
+    public void FromError_IsNotValid()
+    {
+        WaggoResponse<int> response = WaggoResponse.FromError<int>(s_someError);
+
+        response.IsValid.ShouldBeFalse();
+        response.HasError("Test.Error").ShouldBeTrue();
     }
 
     [Fact]

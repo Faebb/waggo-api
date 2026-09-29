@@ -53,7 +53,7 @@ public class WaggoApiResponseFactoryTests
     {
         PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Value);
 
-        WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(WaggoResponse.Success(page), null);
+        WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(WaggoResponse.FromValue(page), null);
 
         api.Data!.Count.ShouldBe(20);
         api.Pagination.ShouldBe(new WaggoApiPagination(2, 20, 45, 3, HasPrevious: true, HasNext: true));

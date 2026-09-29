@@ -17,21 +17,21 @@ internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvide
 
         WaggoResponse<WalkDuration> duration = WalkDuration.Create(query.DurationMinutes);
         response.ConcatStacks(duration);
-        if (response.IsFailure)
+        if (!response.IsValid)
         {
             return response;
         }
 
         WaggoResponse<PricingTable> table = await pricingTableProvider.GetCurrentAsync(cancellationToken);
         response.ConcatStacks(table);
-        if (response.IsFailure)
+        if (!response.IsValid)
         {
             return response;
         }
 
         WaggoResponse<FareBreakdown> fare = FareCalculator.Calculate(table.Value, query.WalkType, duration.Value);
         response.ConcatStacks(fare);
-        if (response.IsFailure)
+        if (!response.IsValid)
         {
             return response;
         }

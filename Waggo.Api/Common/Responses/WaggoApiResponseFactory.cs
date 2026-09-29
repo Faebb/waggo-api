@@ -48,9 +48,9 @@ public static class WaggoApiResponseFactory
     private static WaggoApiResponse<TData> Build<TData>(
         WaggoResponse response, TData? data, WaggoApiPagination? pagination, string? traceId) =>
         new(
-            response.IsSuccess,
-            response.IsSuccess ? data : default,
-            response.IsSuccess ? pagination : null,
+            response.IsValid,
+            response.IsValid ? data : default,
+            response.IsValid ? pagination : null,
             Public(response.Errors),
             Public(response.Warnings),
             Public(response.Infos),
