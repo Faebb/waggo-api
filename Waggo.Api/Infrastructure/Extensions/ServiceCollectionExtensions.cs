@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Serilog;
 using Waggo.Api.Infrastructure.Authentication;
 using Waggo.Api.Infrastructure.Authorization;

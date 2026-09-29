@@ -7,7 +7,7 @@ using Waggo.Application.Pricing.Queries.QuoteFare;
 namespace Waggo.Api.IntegrationTests.Endpoints.Pricing;
 
 /// <summary>Acceptance test for RF-019: the owner sees the price before confirming.</summary>
-[Collection(ApiCollection.Name)]
+[Collection(ApiCollectionDefinition.Name)]
 public class FareQuoteEndpointTests(WaggoApiFactory factory)
 {
     private static Uri Quote(string walkType, int minutes) =>
