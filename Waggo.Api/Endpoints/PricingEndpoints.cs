@@ -2,6 +2,7 @@ using Waggo.Api.Common.Responses;
 using Waggo.Application.Abstractions;
 using Waggo.Application.Common.Logging;
 using Waggo.Application.Pricing.QuoteFare;
+using Waggo.Domain.Common;
 using Waggo.Domain.Pricing;
 
 namespace Waggo.Api.Endpoints;
@@ -10,7 +11,7 @@ internal static class PricingEndpoints
 {
     public static IEndpointRouteBuilder MapPricingEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/pricing").WithTags("Pricing");
+        RouteGroupBuilder group = routes.MapGroup("/pricing").WithTags("Pricing");
 
         // RF-019: fare quote shown to the owner before confirming a walk.
         group.MapGet("/quote", async (
@@ -20,7 +21,8 @@ internal static class PricingEndpoints
                 ILogger<QuoteFareQuery> logger,
                 CancellationToken ct) =>
             {
-                var response = await handler.HandleAsync(new QuoteFareQuery(walkType, durationMinutes), ct);
+                QuoteFareQuery query = new(walkType, durationMinutes);
+                WaggoResponse<FareQuoteResponse> response = await handler.HandleAsync(query, ct);
                 return response.WriteLogs(logger, "QuoteFare").ToApiResult();
             })
             .WithName("QuoteFare")

@@ -9,7 +9,9 @@ namespace Waggo.Api.Common.Responses;
 /// IResult that turns a WaggoResponse into a WaggoApiResponse. Before writing the body it logs every message
 /// that nobody logged yet (safety net), so no error is ever lost even if the endpoint forgot <c>WriteLogs</c>.
 /// </summary>
-internal sealed class WaggoApiResult<TData>(WaggoResponse source, Func<string?, WaggoApiResponse<TData>> build) : IResult
+internal sealed class WaggoApiResult<TData>(
+    WaggoResponse source,
+    Func<string?, WaggoApiResponse<TData>> build) : IResult
 {
     public async Task ExecuteAsync(HttpContext httpContext)
     {
@@ -17,7 +19,9 @@ internal sealed class WaggoApiResult<TData>(WaggoResponse source, Func<string?, 
 
         if (source.PendingLogMessages().Any())
         {
-            var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Waggo.Api.Responses");
+            ILogger logger = httpContext.RequestServices
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("Waggo.Api.Responses");
             source.WriteLogs(logger, httpContext.GetEndpoint()?.DisplayName);
         }
 

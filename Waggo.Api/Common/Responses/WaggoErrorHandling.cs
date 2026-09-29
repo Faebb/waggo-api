@@ -2,21 +2,28 @@ using Microsoft.AspNetCore.Diagnostics;
 
 namespace Waggo.Api.Common.Responses;
 
-/// <summary>Wraps the responses the endpoints never see (exceptions, binding errors, unknown routes) in a WaggoApiResponse.</summary>
+/// <summary>
+/// Wraps the responses the endpoints never see (exceptions, binding errors, unknown routes) in a WaggoApiResponse.
+/// </summary>
 public static class WaggoErrorHandling
 {
     public const string InvalidRequestCode = "Request.Invalid";
     public const string UnexpectedErrorCode = "Server.Unexpected";
 
-    /// <summary>For <c>UseExceptionHandler</c>. The middleware already logs the exception through Serilog.</summary>
+    /// <summary>
+    /// For <c>UseExceptionHandler</c>. The middleware already logs the exception (with its technical detail)
+    /// through Serilog; the client only receives a public message in Spanish.
+    /// </summary>
     public static async Task HandleExceptionAsync(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
-        var exception = httpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
+        Exception? exception = httpContext.Features.Get<IExceptionHandlerFeature>()?.Error;
 
-        var (status, code, message) = exception is BadHttpRequestException bad
-            ? (bad.StatusCode, InvalidRequestCode, bad.Message)
-            : (StatusCodes.Status500InternalServerError, UnexpectedErrorCode, "An unexpected error occurred.");
+        (int status, string code, string message) = exception is BadHttpRequestException bad
+            ? (bad.StatusCode, InvalidRequestCode, "La solicitud tiene parámetros inválidos o incompletos.")
+            : (StatusCodes.Status500InternalServerError,
+                UnexpectedErrorCode,
+                "Ocurrió un error inesperado. Intenta de nuevo más tarde.");
 
         httpContext.Response.StatusCode = status;
         await httpContext.Response.WriteAsJsonAsync(
@@ -27,10 +34,19 @@ public static class WaggoErrorHandling
     public static async Task HandleStatusCodeAsync(StatusCodeContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        var httpContext = context.HttpContext;
-        var status = httpContext.Response.StatusCode;
+        HttpContext httpContext = context.HttpContext;
+        int status = httpContext.Response.StatusCode;
+
+        string message = status switch
+        {
+            StatusCodes.Status404NotFound => "El recurso solicitado no existe.",
+            StatusCodes.Status405MethodNotAllowed => "El método HTTP no está permitido para este recurso.",
+            StatusCodes.Status401Unauthorized => "Debes iniciar sesión para continuar.",
+            StatusCodes.Status403Forbidden => "No tienes permiso para realizar esta acción.",
+            _ => $"La solicitud falló con el estado HTTP {status}.",
+        };
 
         await httpContext.Response.WriteAsJsonAsync(
-            WaggoApiResponseFactory.FromError($"Http.{status}", $"The request failed with HTTP status {status}.", WaggoApiHttp.TraceId(httpContext)));
+            WaggoApiResponseFactory.FromError($"Http.{status}", message, WaggoApiHttp.TraceId(httpContext)));
     }
 }

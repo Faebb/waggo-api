@@ -10,9 +10,9 @@ public class WaggoApiResponseFactoryTests
     [Fact]
     public void From_Success_HasDataAndNullPagination()
     {
-        var response = new WaggoResponse<string>().SetValue("ok");
+        WaggoResponse<string> response = new WaggoResponse<string>().SetValue("ok");
 
-        var api = WaggoApiResponseFactory.From(response, "trace-1");
+        WaggoApiResponse<string> api = WaggoApiResponseFactory.From(response, "trace-1");
 
         api.Success.ShouldBeTrue();
         api.Data.ShouldBe("ok");
@@ -23,13 +23,13 @@ public class WaggoApiResponseFactoryTests
     [Fact]
     public void From_OnlySendsPublicMessages()
     {
-        var response = new WaggoResponse<string>()
+        WaggoResponse<string> response = new WaggoResponse<string>()
             .AddWarning("W.public", "visible")
             .AddWarning("W.internal", "log only", MessageVisibility.Internal)
             .AddInfo("I.internal", "log only", MessageVisibility.Internal)
             .SetValue("ok");
 
-        var api = WaggoApiResponseFactory.From(response, null);
+        WaggoApiResponse<string> api = WaggoApiResponseFactory.From(response, null);
 
         api.Warnings.Select(w => w.Code).ShouldBe(["W.public"]);
         api.Infos.ShouldBeEmpty();
@@ -38,10 +38,10 @@ public class WaggoApiResponseFactoryTests
     [Fact]
     public void From_Failure_HasNoData_AndCarriesErrorsWithField()
     {
-        var response = new WaggoResponse<string>()
+        WaggoResponse<string> response = new WaggoResponse<string>()
             .AddError("Pricing.InvalidDuration", "bad", field: "durationMinutes");
 
-        var api = WaggoApiResponseFactory.From(response, null);
+        WaggoApiResponse<string> api = WaggoApiResponseFactory.From(response, null);
 
         api.Success.ShouldBeFalse();
         api.Data.ShouldBeNull();
@@ -51,9 +51,9 @@ public class WaggoApiResponseFactoryTests
     [Fact]
     public void FromPaged_FillsPagination_AndDataIsTheItems()
     {
-        var page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Value);
+        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Value);
 
-        var api = WaggoApiResponseFactory.FromPaged(WaggoResponse.Success(page), null);
+        WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(WaggoResponse.Success(page), null);
 
         api.Data!.Count.ShouldBe(20);
         api.Pagination.ShouldBe(new WaggoApiPagination(2, 20, 45, 3, HasPrevious: true, HasNext: true));
@@ -62,9 +62,9 @@ public class WaggoApiResponseFactoryTests
     [Fact]
     public void FromPaged_Failure_HasNullPagination()
     {
-        var response = PageRequest.Create(0, 20).ToResponse<PagedList<int>>();
+        WaggoResponse<PagedList<int>> response = PageRequest.Create(0, 20).ToResponse<PagedList<int>>();
 
-        var api = WaggoApiResponseFactory.FromPaged(response, null);
+        WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(response, null);
 
         api.Pagination.ShouldBeNull();
         api.Errors.Single().Code.ShouldBe("Pagination.InvalidPage");

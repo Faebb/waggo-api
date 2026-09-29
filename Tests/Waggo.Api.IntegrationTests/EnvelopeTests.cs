@@ -12,12 +12,12 @@ public class EnvelopeTests(WaggoApiFactory factory)
     [Fact]
     public async Task UnknownRoute_Returns404Envelope()
     {
-        using var client = factory.CreateClient();
+        using HttpClient client = factory.CreateClient();
 
-        var response = await client.GetAsync(new Uri("/api/v1/does-not-exist", UriKind.Relative));
+        HttpResponseMessage response = await client.GetAsync(new Uri("/api/v1/does-not-exist", UriKind.Relative));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        var body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
+        WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
         body!.Success.ShouldBeFalse();
         body.Errors.Single().Code.ShouldBe("Http.404");
     }

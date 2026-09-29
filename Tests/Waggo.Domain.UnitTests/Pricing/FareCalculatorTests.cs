@@ -1,3 +1,4 @@
+using Waggo.Domain.Common;
 using Waggo.Domain.Pricing;
 
 namespace Waggo.Domain.UnitTests.Pricing;
@@ -17,10 +18,10 @@ public class FareCalculatorTests
     public void Calculate_ReturnsTotalCommissionAndPayout(
         WalkType walkType, int minutes, decimal total, decimal commission, decimal payout)
     {
-        var table = PricingTableMother.Default();
-        var duration = WalkDuration.Create(minutes).Value;
+        PricingTable table = PricingTableMother.Default();
+        WalkDuration duration = WalkDuration.Create(minutes).Value;
 
-        var fare = FareCalculator.Calculate(table, walkType, duration).Value;
+        FareBreakdown fare = FareCalculator.Calculate(table, walkType, duration).Value;
 
         fare.Total.ShouldBe(Money.Of(total, "COP"));
         fare.Commission.ShouldBe(Money.Of(commission, "COP"));
@@ -30,13 +31,15 @@ public class FareCalculatorTests
     [Fact]
     public void Calculate_CommissionPlusPayout_AlwaysEqualsTotal()
     {
-        var table = PricingTableMother.Default();
+        PricingTable table = PricingTableMother.Default();
 
-        for (var minutes = WalkDuration.MinMinutes; minutes <= WalkDuration.MaxMinutes; minutes += WalkDuration.StepMinutes)
+        for (int minutes = WalkDuration.MinMinutes;
+            minutes <= WalkDuration.MaxMinutes;
+            minutes += WalkDuration.StepMinutes)
         {
-            foreach (var type in Enum.GetValues<WalkType>())
+            foreach (WalkType type in Enum.GetValues<WalkType>())
             {
-                var fare = FareCalculator.Calculate(table, type, WalkDuration.Create(minutes).Value).Value;
+                FareBreakdown fare = FareCalculator.Calculate(table, type, WalkDuration.Create(minutes).Value).Value;
                 fare.Commission.Add(fare.WalkerPayout).ShouldBe(fare.Total);
             }
         }
@@ -45,9 +48,11 @@ public class FareCalculatorTests
     [Fact]
     public void Calculate_WalkTypeWithoutRate_Fails()
     {
-        var table = PricingTableMother.Default(WalkType.Individual);
+        PricingTable table = PricingTableMother.Default(WalkType.Individual);
 
-        var result = FareCalculator.Calculate(table, WalkType.Group, WalkDuration.Create(60).Value);
+        WalkDuration duration = WalkDuration.Create(60).Value;
+
+        WaggoResponse<FareBreakdown> result = FareCalculator.Calculate(table, WalkType.Group, duration);
 
         result.IsFailure.ShouldBeTrue();
         result.HasError("Pricing.WalkTypeNotPriced").ShouldBeTrue();

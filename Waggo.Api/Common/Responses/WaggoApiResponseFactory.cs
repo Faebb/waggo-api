@@ -15,15 +15,18 @@ public static class WaggoApiResponseFactory
     public static WaggoApiResponse<IReadOnlyList<T>> FromPaged<T>(WaggoResponse<PagedList<T>> response, string? traceId)
     {
         ArgumentNullException.ThrowIfNull(response);
-        var page = response.ValueOrDefault;
-        var pagination = page is null
+        PagedList<T>? page = response.ValueOrDefault;
+        WaggoApiPagination? pagination = page is null
             ? null
-            : new WaggoApiPagination(page.Page, page.PageSize, page.TotalItems, page.TotalPages, page.HasPrevious, page.HasNext);
+            : new WaggoApiPagination(
+                page.Page, page.PageSize, page.TotalItems, page.TotalPages, page.HasPrevious, page.HasNext);
 
         return Build(response, page?.Items, pagination, traceId);
     }
 
-    /// <summary>Envelope for failures that happen outside a use case (binding errors, unknown routes, exceptions).</summary>
+    /// <summary>
+    /// Envelope for failures that happen outside a use case (binding errors, unknown routes, exceptions).
+    /// </summary>
     public static WaggoApiResponse<object> FromError(string code, string message, string? traceId) =>
         new(false, null, null, [new WaggoApiMessage(code, message)], [], [], traceId);
 

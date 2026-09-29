@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Pagination;
+using Waggo.Domain.Common;
 
 namespace Waggo.Application.UnitTests.Common.Pagination;
 
@@ -7,7 +8,7 @@ public class PageRequestTests
     [Fact]
     public void Create_WithoutValues_UsesDefaults()
     {
-        var request = PageRequest.Create(null, null).Value;
+        PageRequest request = PageRequest.Create(null, null).Value;
 
         request.Page.ShouldBe(1);
         request.PageSize.ShouldBe(20);
@@ -28,7 +29,7 @@ public class PageRequestTests
     [Fact]
     public void Create_BothInvalid_ReportsBothErrors_WithTheirFields()
     {
-        var response = PageRequest.Create(0, 500);
+        WaggoResponse<PageRequest> response = PageRequest.Create(0, 500);
 
         response.Errors.Select(e => e.Field).ShouldBe(["page", "pageSize"]);
     }

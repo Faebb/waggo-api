@@ -11,7 +11,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Waggo")
+        string connectionString = configuration.GetConnectionString("Waggo")
             ?? throw new InvalidOperationException("Connection string 'Waggo' is not configured.");
 
         services.AddDbContext<WaggoDbContext>(options =>

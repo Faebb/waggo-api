@@ -19,7 +19,10 @@ jobs:
       - name: Restore
         run: dotnet restore
 
-      - name: Build (warnings as errors)
+      - name: Format check (whitespace)
+        run: dotnet format whitespace --verify-no-changes
+
+      - name: Build (warnings as errors, code style enforced)
         run: dotnet build --no-restore -c Release
 
       - name: Unit + architecture tests

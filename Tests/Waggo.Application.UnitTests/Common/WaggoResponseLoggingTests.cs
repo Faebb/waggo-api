@@ -11,7 +11,7 @@ public class WaggoResponseLoggingTests
     [Fact]
     public void WriteLogs_WritesEachStackWithItsLevel()
     {
-        var response = new WaggoResponse()
+        WaggoResponse response = new WaggoResponse()
             .AddError("E.1", "boom")
             .AddWarning("W.1", "careful")
             .AddInfo("I.1", "fyi", MessageVisibility.Internal);
@@ -25,7 +25,7 @@ public class WaggoResponseLoggingTests
     [Fact]
     public void WriteLogs_Twice_DoesNotDuplicateEntries()
     {
-        var response = new WaggoResponse().AddWarning("W.1", "careful");
+        WaggoResponse response = new WaggoResponse().AddWarning("W.1", "careful");
 
         response.WriteLogs(_logger);
         response.WriteLogs(_logger);
@@ -36,9 +36,9 @@ public class WaggoResponseLoggingTests
     [Fact]
     public void WriteLogs_AfterConcatStacks_OnlyWritesTheNewMessages()
     {
-        var inner = new WaggoResponse().AddWarning("W.inner", "logged by the inner method");
+        WaggoResponse inner = new WaggoResponse().AddWarning("W.inner", "logged by the inner method");
         inner.WriteLogs(_logger, "Inner");
-        var outer = new WaggoResponse().AddInfo("I.outer", "pending").ConcatStacks(inner);
+        WaggoResponse outer = new WaggoResponse().AddInfo("I.outer", "pending").ConcatStacks(inner);
 
         outer.WriteLogs(_logger, "Outer");
 
@@ -50,7 +50,7 @@ public class WaggoResponseLoggingTests
     [Fact]
     public void WriteLogs_Generic_ReturnsSameResponseForChaining()
     {
-        var response = new WaggoResponse<int>().SetValue(1);
+        WaggoResponse<int> response = new WaggoResponse<int>().SetValue(1);
 
         response.WriteLogs(_logger).ShouldBeSameAs(response);
     }

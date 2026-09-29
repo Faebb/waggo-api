@@ -9,10 +9,10 @@ public sealed record PageRequest
     public const int DefaultPageSize = 20;
     public const int MaxPageSize = 100;
 
-    public static readonly Error InvalidPage = new("Pagination.InvalidPage", "Page must be 1 or greater.");
+    public static readonly Error InvalidPage = new("Pagination.InvalidPage", "La página debe ser 1 o mayor.");
 
     public static readonly Error InvalidPageSize = new(
-        "Pagination.InvalidPageSize", $"Page size must be between 1 and {MaxPageSize}.");
+        "Pagination.InvalidPageSize", $"El tamaño de página debe estar entre 1 y {MaxPageSize}.");
 
     private PageRequest(int page, int pageSize)
     {
@@ -28,9 +28,9 @@ public sealed record PageRequest
 
     public static WaggoResponse<PageRequest> Create(int? page, int? pageSize)
     {
-        var response = new WaggoResponse<PageRequest>();
-        var p = page ?? DefaultPage;
-        var size = pageSize ?? DefaultPageSize;
+        WaggoResponse<PageRequest> response = new WaggoResponse<PageRequest>();
+        int p = page ?? DefaultPage;
+        int size = pageSize ?? DefaultPageSize;
 
         if (p < 1)
         {

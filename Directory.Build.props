@@ -7,7 +7,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Needed so IDE0005 (unused usings) runs on build; CS1591 is disabled in .editorconfig -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
 

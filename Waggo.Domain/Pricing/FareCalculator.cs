@@ -13,18 +13,18 @@ public static class FareCalculator
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(duration);
 
-        var rate = table.RateFor(walkType);
+        WalkRate? rate = table.RateFor(walkType);
         if (rate is null)
         {
             return PricingErrors.WalkTypeNotPriced(walkType);
         }
 
-        var total = rate.BaseFee
+        Money total = rate.BaseFee
             .Add(rate.PerMinute.Multiply(duration.Minutes))
             .RoundToNearest(table.RoundingIncrement);
 
-        var commission = total.Multiply(table.CommissionRate.Value).RoundToNearest(1m);
-        var payout = total.Subtract(commission);
+        Money commission = total.Multiply(table.CommissionRate.Value).RoundToNearest(1m);
+        Money payout = total.Subtract(commission);
 
         return new FareBreakdown(total, commission, payout);
     }

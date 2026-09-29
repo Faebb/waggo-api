@@ -16,21 +16,21 @@ public static partial class WaggoResponseLogging
         ArgumentNullException.ThrowIfNull(response);
         ArgumentNullException.ThrowIfNull(logger);
 
-        var name = operation ?? "operation";
+        string name = operation ?? "operation";
 
-        foreach (var message in response.Errors.Where(m => !m.IsLogged))
+        foreach (WaggoMessage message in response.Errors.Where(m => !m.IsLogged))
         {
             LogError(logger, name, message.Code, message.Message, message.Field, message.Visibility);
             message.MarkAsLogged();
         }
 
-        foreach (var message in response.Warnings.Where(m => !m.IsLogged))
+        foreach (WaggoMessage message in response.Warnings.Where(m => !m.IsLogged))
         {
             LogWarning(logger, name, message.Code, message.Message, message.Field, message.Visibility);
             message.MarkAsLogged();
         }
 
-        foreach (var message in response.Infos.Where(m => !m.IsLogged))
+        foreach (WaggoMessage message in response.Infos.Where(m => !m.IsLogged))
         {
             LogInfo(logger, name, message.Code, message.Message, message.Field, message.Visibility);
             message.MarkAsLogged();
@@ -39,7 +39,10 @@ public static partial class WaggoResponseLogging
         return response;
     }
 
-    public static WaggoResponse<T> WriteLogs<T>(this WaggoResponse<T> response, ILogger logger, string? operation = null)
+    public static WaggoResponse<T> WriteLogs<T>(
+        this WaggoResponse<T> response,
+        ILogger logger,
+        string? operation = null)
     {
         WriteLogs((WaggoResponse)response, logger, operation);
         return response;
@@ -47,13 +50,31 @@ public static partial class WaggoResponseLogging
 
     [LoggerMessage(EventId = 1001, Level = LogLevel.Error,
         Message = "[{Operation}] {Code}: {Text} (field: {Field}, visibility: {Visibility})")]
-    private static partial void LogError(ILogger logger, string operation, string code, string text, string? field, MessageVisibility visibility);
+    private static partial void LogError(
+        ILogger logger,
+        string operation,
+        string code,
+        string text,
+        string? field,
+        MessageVisibility visibility);
 
     [LoggerMessage(EventId = 1002, Level = LogLevel.Warning,
         Message = "[{Operation}] {Code}: {Text} (field: {Field}, visibility: {Visibility})")]
-    private static partial void LogWarning(ILogger logger, string operation, string code, string text, string? field, MessageVisibility visibility);
+    private static partial void LogWarning(
+        ILogger logger,
+        string operation,
+        string code,
+        string text,
+        string? field,
+        MessageVisibility visibility);
 
     [LoggerMessage(EventId = 1003, Level = LogLevel.Information,
         Message = "[{Operation}] {Code}: {Text} (field: {Field}, visibility: {Visibility})")]
-    private static partial void LogInfo(ILogger logger, string operation, string code, string text, string? field, MessageVisibility visibility);
+    private static partial void LogInfo(
+        ILogger logger,
+        string operation,
+        string code,
+        string text,
+        string? field,
+        MessageVisibility visibility);
 }

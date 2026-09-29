@@ -16,12 +16,13 @@ public class FareQuoteEndpointTests(WaggoApiFactory factory)
     [Fact]
     public async Task Get_ValidQuote_Returns200WithEnvelope()
     {
-        using var client = factory.CreateClient();
+        using HttpClient client = factory.CreateClient();
 
-        var response = await client.GetAsync(Quote("Individual", 60));
+        HttpResponseMessage response = await client.GetAsync(Quote("Individual", 60));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        var body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<FareQuoteResponse>>();
+        WaggoApiResponse<FareQuoteResponse>? body =
+            await response.Content.ReadFromJsonAsync<WaggoApiResponse<FareQuoteResponse>>();
         body.ShouldNotBeNull();
         body.Success.ShouldBeTrue();
         body.Data.ShouldBe(new FareQuoteResponse("Individual", 60, "COP", 23000m, 4600m, 18400m));
@@ -34,12 +35,13 @@ public class FareQuoteEndpointTests(WaggoApiFactory factory)
     [Fact]
     public async Task Get_InvalidDuration_Returns400EnvelopeWithErrorCode()
     {
-        using var client = factory.CreateClient();
+        using HttpClient client = factory.CreateClient();
 
-        var response = await client.GetAsync(Quote("Individual", 20));
+        HttpResponseMessage response = await client.GetAsync(Quote("Individual", 20));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<FareQuoteResponse>>();
+        WaggoApiResponse<FareQuoteResponse>? body =
+            await response.Content.ReadFromJsonAsync<WaggoApiResponse<FareQuoteResponse>>();
         body!.Success.ShouldBeFalse();
         body.Data.ShouldBeNull();
         body.Errors.Single().Code.ShouldBe("Pricing.InvalidDuration");
@@ -48,12 +50,12 @@ public class FareQuoteEndpointTests(WaggoApiFactory factory)
     [Fact]
     public async Task Get_UnknownWalkType_Returns400Envelope()
     {
-        using var client = factory.CreateClient();
+        using HttpClient client = factory.CreateClient();
 
-        var response = await client.GetAsync(Quote("Skateboard", 60));
+        HttpResponseMessage response = await client.GetAsync(Quote("Skateboard", 60));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        var body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
+        WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
         body!.Errors.Single().Code.ShouldBe(WaggoErrorHandling.InvalidRequestCode);
     }
 }

@@ -5,7 +5,7 @@ using Waggo.Api.Endpoints;
 using Waggo.Application;
 using Waggo.Infrastructure;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Serilog is the only logging provider. Code logs through ILogger<T>; sinks/levels come from the "Serilog" section.
 builder.Services.AddSerilog((services, configuration) => configuration
@@ -25,7 +25,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Every response — including exceptions, binding errors and unknown routes — is a WaggoApiResponse.
 app.UseExceptionHandler(new ExceptionHandlerOptions { ExceptionHandler = WaggoErrorHandling.HandleExceptionAsync });
@@ -36,7 +36,7 @@ app.UseCors();
 app.MapOpenApi();
 app.MapHealthChecks("/health");
 
-var v1 = app.MapGroup("/api/v1");
+RouteGroupBuilder v1 = app.MapGroup("/api/v1");
 v1.MapPricingEndpoints();
 
 await app.RunAsync();

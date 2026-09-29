@@ -3,7 +3,9 @@ using NetArchTest.Rules;
 
 namespace Waggo.ArchitectureTests;
 
-/// <summary>Guards the Clean Architecture dependency rule (RNF-009). If one of these fails, the design was broken.</summary>
+/// <summary>
+/// Guards the Clean Architecture dependency rule (RNF-009). If one of these fails, the design was broken.
+/// </summary>
 public class LayerTests
 {
     private const string DomainNs = "Waggo.Domain";
@@ -11,16 +13,17 @@ public class LayerTests
     private const string InfrastructureNs = "Waggo.Infrastructure";
     private const string ApiNs = "Waggo.Api";
 
-    private static readonly Assembly Domain = typeof(Waggo.Domain.Common.WaggoResponse).Assembly;
-    private static readonly Assembly Application = typeof(Waggo.Application.DependencyInjection).Assembly;
-    private static readonly Assembly Infrastructure = typeof(Waggo.Infrastructure.DependencyInjection).Assembly;
+    private static readonly Assembly s_domain = typeof(Waggo.Domain.Common.WaggoResponse).Assembly;
+    private static readonly Assembly s_application = typeof(Waggo.Application.DependencyInjection).Assembly;
+    private static readonly Assembly s_infrastructure = typeof(Waggo.Infrastructure.DependencyInjection).Assembly;
 
     [Fact]
     public void Domain_DoesNotDependOnOtherLayersOrFrameworks()
     {
-        var result = Types.InAssembly(Domain)
+        TestResult result = Types.InAssembly(s_domain)
             .ShouldNot()
-            .HaveDependencyOnAny(ApplicationNs, InfrastructureNs, ApiNs, "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
+            .HaveDependencyOnAny(
+                ApplicationNs, InfrastructureNs, ApiNs, "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
             .GetResult();
 
         result.IsSuccessful.ShouldBeTrue(Describe(result));
@@ -29,7 +32,7 @@ public class LayerTests
     [Fact]
     public void Application_DoesNotDependOnInfrastructureOrApi()
     {
-        var result = Types.InAssembly(Application)
+        TestResult result = Types.InAssembly(s_application)
             .ShouldNot()
             .HaveDependencyOnAny(InfrastructureNs, ApiNs, "Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore")
             .GetResult();
@@ -40,7 +43,7 @@ public class LayerTests
     [Fact]
     public void Infrastructure_DoesNotDependOnApi()
     {
-        var result = Types.InAssembly(Infrastructure)
+        TestResult result = Types.InAssembly(s_infrastructure)
             .ShouldNot()
             .HaveDependencyOn(ApiNs)
             .GetResult();
@@ -51,7 +54,7 @@ public class LayerTests
     [Fact]
     public void Handlers_AreSealedAndNotPublic()
     {
-        var result = Types.InAssembly(Application)
+        TestResult result = Types.InAssembly(s_application)
             .That().HaveNameEndingWith("Handler")
             .And().AreClasses()
             .Should().BeSealed()
@@ -66,7 +69,7 @@ public class LayerTests
     {
         string[] forbidden = ["CardNumber", "Pan", "Cvv", "Cvc", "ExpirationDate"];
 
-        var offenders = Domain.GetTypes()
+        List<string> offenders = s_domain.GetTypes()
             .SelectMany(t => t.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             .Where(p => forbidden.Contains(p.Name, StringComparer.OrdinalIgnoreCase))
             .Select(p => $"{p.DeclaringType?.Name}.{p.Name}")

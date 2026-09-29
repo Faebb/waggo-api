@@ -21,10 +21,13 @@ public class QuoteFareHandlerTests
         _sut = new QuoteFareHandler(_provider);
     }
 
+    private Task<WaggoResponse<FareQuoteResponse>> QuoteAsync(WalkType walkType, int minutes) =>
+        _sut.HandleAsync(new QuoteFareQuery(walkType, minutes), CancellationToken.None);
+
     [Fact]
     public async Task HandleAsync_ValidQuery_ReturnsQuote()
     {
-        var result = await _sut.HandleAsync(new QuoteFareQuery(WalkType.Individual, 60), CancellationToken.None);
+        WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 60);
 
         result.IsSuccess.ShouldBeTrue();
         result.Value.ShouldBe(new FareQuoteResponse("Individual", 60, "COP", 23000m, 4600m, 18400m));
@@ -33,16 +36,16 @@ public class QuoteFareHandlerTests
     [Fact]
     public async Task HandleAsync_ValidQuery_AddsInternalInfoForTheLog()
     {
-        var result = await _sut.HandleAsync(new QuoteFareQuery(WalkType.Individual, 60), CancellationToken.None);
+        WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 60);
 
-        var info = result.Infos.Single(i => i.Code == PricingMessages.FareQuoted);
+        WaggoMessage info = result.Infos.Single(i => i.Code == PricingMessages.FareQuoted);
         info.Visibility.ShouldBe(MessageVisibility.Internal);
     }
 
     [Fact]
     public async Task HandleAsync_InvalidDuration_FailsWithoutLoadingPricing()
     {
-        var result = await _sut.HandleAsync(new QuoteFareQuery(WalkType.Individual, 20), CancellationToken.None);
+        WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 20);
 
         result.HasError(PricingErrors.InvalidDuration.Code).ShouldBeTrue();
         await _provider.DidNotReceive().GetCurrentAsync(Arg.Any<CancellationToken>());
@@ -51,7 +54,7 @@ public class QuoteFareHandlerTests
     [Fact]
     public async Task HandleAsync_WalkTypeWithoutRate_Fails()
     {
-        var result = await _sut.HandleAsync(new QuoteFareQuery(WalkType.Group, 60), CancellationToken.None);
+        WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Group, 60);
 
         result.HasError("Pricing.WalkTypeNotPriced").ShouldBeTrue();
     }
@@ -64,7 +67,7 @@ public class QuoteFareHandlerTests
                 .AddWarning("Pricing.StaleRates", "Rates are older than 24h")
                 .AddError("Pricing.RatesUnavailable", "No rates", ErrorType.Unexpected));
 
-        var result = await _sut.HandleAsync(new QuoteFareQuery(WalkType.Individual, 60), CancellationToken.None);
+        WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 60);
 
         result.HasWarning("Pricing.StaleRates").ShouldBeTrue();
         result.HasError("Pricing.RatesUnavailable").ShouldBeTrue();

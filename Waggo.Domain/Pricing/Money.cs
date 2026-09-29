@@ -52,7 +52,7 @@ public sealed record Money
             throw new ArgumentOutOfRangeException(nameof(increment), increment, "Increment must be positive.");
         }
 
-        var rounded = Math.Round(Amount / increment, MidpointRounding.AwayFromZero) * increment;
+        decimal rounded = Math.Round(Amount / increment, MidpointRounding.AwayFromZero) * increment;
         return new Money(rounded, Currency);
     }
 

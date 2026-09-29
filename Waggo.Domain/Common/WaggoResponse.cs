@@ -23,7 +23,9 @@ public class WaggoResponse
 
     public bool IsFailure => !IsSuccess;
 
-    /// <summary>Kind of the first error (drives the HTTP status). <see cref="ErrorType.None"/> when successful.</summary>
+    /// <summary>
+    /// Kind of the first error (drives the HTTP status). <see cref="ErrorType.None"/> when successful.
+    /// </summary>
     public ErrorType ErrorType => _errors.Count == 0 ? ErrorType.None : _errors[0].ErrorType;
 
     public static WaggoResponse Success() => new();
@@ -111,7 +113,10 @@ public sealed class WaggoResponse<T> : WaggoResponse
 
     public bool HasValue { get; private set; }
 
-    /// <summary>The value. Throws if the response failed or no value was set — check <see cref="WaggoResponse.IsSuccess"/> first.</summary>
+    /// <summary>
+    /// The value. Throws if the response failed or no value was set;
+    /// check <see cref="WaggoResponse.IsSuccess"/> first.
+    /// </summary>
     public T Value => IsSuccess && HasValue
         ? _value!
         : throw new InvalidOperationException(IsFailure
@@ -179,7 +184,7 @@ public sealed class WaggoResponse<T> : WaggoResponse
     public WaggoResponse<TOut> Map<TOut>(Func<T, TOut> map)
     {
         ArgumentNullException.ThrowIfNull(map);
-        var result = ToResponse<TOut>();
+        WaggoResponse<TOut> result = ToResponse<TOut>();
         return IsSuccess && HasValue ? result.SetValue(map(_value!)) : result;
     }
 }

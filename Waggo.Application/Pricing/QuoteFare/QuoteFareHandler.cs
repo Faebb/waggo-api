@@ -8,33 +8,35 @@ namespace Waggo.Application.Pricing.QuoteFare;
 internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvider)
     : IQueryHandler<QuoteFareQuery, FareQuoteResponse>
 {
-    public async Task<WaggoResponse<FareQuoteResponse>> HandleAsync(QuoteFareQuery query, CancellationToken cancellationToken)
+    public async Task<WaggoResponse<FareQuoteResponse>> HandleAsync(
+        QuoteFareQuery query,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var response = new WaggoResponse<FareQuoteResponse>();
+        WaggoResponse<FareQuoteResponse> response = new WaggoResponse<FareQuoteResponse>();
 
-        var duration = WalkDuration.Create(query.DurationMinutes);
+        WaggoResponse<WalkDuration> duration = WalkDuration.Create(query.DurationMinutes);
         response.ConcatStacks(duration);
         if (response.IsFailure)
         {
             return response;
         }
 
-        var table = await pricingTableProvider.GetCurrentAsync(cancellationToken);
+        WaggoResponse<PricingTable> table = await pricingTableProvider.GetCurrentAsync(cancellationToken);
         response.ConcatStacks(table);
         if (response.IsFailure)
         {
             return response;
         }
 
-        var fare = FareCalculator.Calculate(table.Value, query.WalkType, duration.Value);
+        WaggoResponse<FareBreakdown> fare = FareCalculator.Calculate(table.Value, query.WalkType, duration.Value);
         response.ConcatStacks(fare);
         if (response.IsFailure)
         {
             return response;
         }
 
-        var quote = fare.Value;
+        FareBreakdown quote = fare.Value;
         response.AddInfo(
             PricingMessages.FareQuoted,
             $"Fare quoted: {query.WalkType} {duration.Value.Minutes} min = {quote.Total}",
