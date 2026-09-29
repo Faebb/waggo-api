@@ -3,7 +3,7 @@ using Waggo.Api.IntegrationTests.Infrastructure;
 
 namespace Waggo.Api.IntegrationTests.Health;
 
-[Collection(ApiCollection.Name)]
+[Collection(ApiCollectionDefinition.Name)]
 public class HealthEndpointTests(WaggoApiFactory factory)
 {
     [Theory]

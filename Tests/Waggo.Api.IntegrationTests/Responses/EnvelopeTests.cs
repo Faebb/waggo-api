@@ -6,7 +6,7 @@ using Waggo.Api.IntegrationTests.Infrastructure;
 namespace Waggo.Api.IntegrationTests.Responses;
 
 /// <summary>Every response of the API is a WaggoApiResponse, even the ones no endpoint produces.</summary>
-[Collection(ApiCollection.Name)]
+[Collection(ApiCollectionDefinition.Name)]
 public class EnvelopeTests(WaggoApiFactory factory)
 {
     [Fact]
