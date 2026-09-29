@@ -1,3 +1,5 @@
+using Waggo.Domain.Enums.Common;
+
 namespace Waggo.Domain.Common;
 
 /// <summary>One entry of the errors, warnings or infos stack of a <see cref="WaggoResponse{T}"/>.</summary>

@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Waggo.Application.Pricing;
-using Waggo.Infrastructure.Persistence;
-using Waggo.Infrastructure.Pricing;
+using Waggo.Application.Common.Interfaces.Pricing;
+using Waggo.Infrastructure.Options.Pricing;
+using Waggo.Infrastructure.Persistence.Context;
+using Waggo.Infrastructure.Services.Pricing;
 
 namespace Waggo.Infrastructure;
 

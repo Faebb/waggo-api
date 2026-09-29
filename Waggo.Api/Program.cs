@@ -1,4 +1,4 @@
-using Waggo.Api.Configuration;
+using Waggo.Api.Infrastructure.Extensions;
 using Waggo.Application;
 using Waggo.Infrastructure;
 

@@ -1,3 +1,5 @@
+using Waggo.Domain.Enums.Common;
+
 namespace Waggo.Domain.Common;
 
 /// <summary>

@@ -1,4 +1,5 @@
 using Waggo.Domain.Common;
+using Waggo.Domain.Enums.Common;
 
 namespace Waggo.Domain.UnitTests.Common;
 

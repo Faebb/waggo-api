@@ -36,9 +36,3 @@ public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.UseSetting("Authentication:DevelopmentUser:Roles:0", "owner");
     }
 }
-
-[CollectionDefinition(Name)]
-public sealed class ApiCollection : ICollectionFixture<WaggoApiFactory>
-{
-    public const string Name = "api";
-}

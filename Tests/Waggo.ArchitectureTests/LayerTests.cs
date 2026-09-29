@@ -1,5 +1,6 @@
 using System.Reflection;
 using NetArchTest.Rules;
+using Waggo.Domain.Exceptions;
 
 namespace Waggo.ArchitectureTests;
 
@@ -81,7 +82,7 @@ public class LayerTests
     public void CustomExceptions_AreSealed_AndLiveInDomain()
     {
         TestResult result = Types.InAssembly(s_domain)
-            .That().Inherit(typeof(Waggo.Domain.Common.Exceptions.WaggoException))
+            .That().Inherit(typeof(WaggoException))
             .Should().BeSealed()
             .GetResult();
 

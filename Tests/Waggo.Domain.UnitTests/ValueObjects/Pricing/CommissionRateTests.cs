@@ -1,0 +1,21 @@
+using Waggo.Domain.Errors.Pricing;
+using Waggo.Domain.ValueObjects.Pricing;
+
+namespace Waggo.Domain.UnitTests.ValueObjects.Pricing;
+
+public class CommissionRateTests
+{
+    public static TheoryData<decimal> ValidRates => new() { 0m, 0.2m, 1m };
+
+    public static TheoryData<decimal> InvalidRates => new() { -0.01m, 1.01m };
+
+    [Theory]
+    [MemberData(nameof(ValidRates))]
+    public void Create_BetweenZeroAndOne_Succeeds(decimal value) =>
+        CommissionRate.Create(value).Data.Value.ShouldBe(value);
+
+    [Theory]
+    [MemberData(nameof(InvalidRates))]
+    public void Create_OutOfRange_Fails(decimal value) =>
+        CommissionRate.Create(value).Errors.ShouldContain(e => e.Code == PricingErrors.InvalidCommissionRate.Code);
+}

@@ -1,9 +1,10 @@
-using Waggo.Api.Common.Responses;
-using Waggo.Api.Common.Validation;
-using Waggo.Api.Security;
-using Waggo.Application.Abstractions;
-using Waggo.Application.Common.Logging;
-using Waggo.Application.Pricing.QuoteFare;
+using Waggo.Api.Endpoints.Pricing.Requests;
+using Waggo.Api.Infrastructure.Authorization;
+using Waggo.Api.Infrastructure.Extensions;
+using Waggo.Api.Infrastructure.Responses;
+using Waggo.Application.Common.Extensions;
+using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Pricing.Queries.QuoteFare;
 using Waggo.Domain.Common;
 
 namespace Waggo.Api.Endpoints.Pricing;

@@ -1,7 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using Waggo.Application.Abstractions;
-using Waggo.Application.Pricing.QuoteFare;
+using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Pricing.Queries.QuoteFare;
 
 namespace Waggo.Application;
 
