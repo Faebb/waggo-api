@@ -1,0 +1,24 @@
+name: PR title
+
+# PRs are merged with "Squash and merge": the PR title becomes the single commit on main,
+# so it must follow Conventional Commits.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  conventional-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Conventional Commits title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|test|refactor|docs|chore|ci|build|perf)(\([a-z0-9-]+\))?!?: .+'
+          if [[ ! "$TITLE" =~ $pattern ]]; then
+            echo "::error::El título del PR será el commit en main (squash). Usa Conventional Commits, ej. 'feat(pricing): quote fare by walk type (RF-019)'. Actual: '$TITLE'"
+            exit 1
+          fi
+          echo "OK: $TITLE"

@@ -1,3 +1,5 @@
+<!-- Título del PR = commit en main (squash and merge). Formato Conventional Commits: feat(<modulo>): <resumen> (RF-XXX) -->
+
 ## ¿Qué cambia?
 <!-- Descripción breve -->
 
