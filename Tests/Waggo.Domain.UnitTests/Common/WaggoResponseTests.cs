@@ -4,12 +4,12 @@ namespace Waggo.Domain.UnitTests.Common;
 
 public class WaggoResponseTests
 {
-    private static readonly Error s_someError = new("Test.Error", "Something went wrong", ErrorType.NotFound);
+    private static readonly Error s_notFound = new("Test.NotFound", "Not found", ErrorType.NotFound);
 
     [Fact]
     public void New_HasEmptyStacks_AndIsValid()
     {
-        WaggoResponse response = new WaggoResponse();
+        WaggoResponse<int> response = new();
 
         response.IsValid.ShouldBeTrue();
         response.Errors.ShouldBeEmpty();
@@ -19,22 +19,35 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void AddError_MakesItInvalid_WithTheErrorType()
+    public void AddError_MakesItInvalid_AndKeepsTheErrorType()
     {
-        WaggoResponse response = new WaggoResponse().AddError(s_someError, field: "id");
+        WaggoResponse<int> response = new();
+
+        response.AddError(s_notFound);
 
         response.IsValid.ShouldBeFalse();
         response.ErrorType.ShouldBe(ErrorType.NotFound);
-        response.Errors.Single().Field.ShouldBe("id");
-        response.HasError("Test.Error").ShouldBeTrue();
+        response.Errors.Single().Code.ShouldBe("Test.NotFound");
+    }
+
+    [Fact]
+    public void AddError_ErrorTypeComesFromTheFirstError()
+    {
+        WaggoResponse<int> response = new();
+
+        response.AddError("E.1", "first", ErrorType.Conflict);
+        response.AddError("E.2", "second", ErrorType.NotFound);
+
+        response.ErrorType.ShouldBe(ErrorType.Conflict);
     }
 
     [Fact]
     public void WarningsAndInfos_KeepItValid()
     {
-        WaggoResponse response = new WaggoResponse()
-            .AddWarning("W.1", "careful")
-            .AddInfo("I.1", "fyi", MessageVisibility.Internal);
+        WaggoResponse<int> response = new();
+
+        response.AddWarning("W.1", "careful");
+        response.AddInfo("I.1", "fyi", MessageVisibility.Internal);
 
         response.IsValid.ShouldBeTrue();
         response.Warnings.Single().Code.ShouldBe("W.1");
@@ -42,15 +55,24 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void ConcatStacks_AppendsTheThreeStacksInOrder()
+    public void Data_IsSetDirectly()
     {
-        WaggoResponse inner = new WaggoResponse()
-            .AddError("E.2", "inner error")
-            .AddWarning("W.2", "inner warning")
-            .AddInfo("I.2", "inner info");
-        WaggoResponse outer = new WaggoResponse()
-            .AddError("E.1", "outer error")
-            .AddWarning("W.1", "outer warning");
+        WaggoResponse<string> response = new() { Data = "done" };
+
+        response.Data.ShouldBe("done");
+    }
+
+    [Fact]
+    public void ConcatStacks_PassesTheThreeStacks_InOrder()
+    {
+        WaggoResponse<string> inner = new();
+        inner.AddError("E.2", "inner error");
+        inner.AddWarning("W.2", "inner warning");
+        inner.AddInfo("I.2", "inner info");
+
+        WaggoResponse<int> outer = new();
+        outer.AddError("E.1", "outer error");
+        outer.AddWarning("W.1", "outer warning");
 
         outer.ConcatStacks(inner);
 
@@ -60,112 +82,26 @@ public class WaggoResponseTests
     }
 
     [Fact]
-    public void ConcatStacks_KeepsTheLoggedStateOfEachMessage()
+    public void ConcatStacks_FromAnInvalidResponse_MakesItInvalidWithTheSameErrorType()
     {
-        WaggoResponse inner = new WaggoResponse().AddWarning("W.1", "already logged");
-        inner.Warnings[0].MarkAsLogged();
-        WaggoResponse outer = new WaggoResponse().AddInfo("I.1", "pending");
+        WaggoResponse<string> inner = new();
+        inner.AddError(s_notFound);
+        WaggoResponse<int> outer = new();
 
         outer.ConcatStacks(inner);
 
-        outer.PendingLogMessages().Select(m => m.Code).ShouldBe(["I.1"]);
+        outer.IsValid.ShouldBeFalse();
+        outer.ErrorType.ShouldBe(ErrorType.NotFound);
     }
 
     [Fact]
-    public void ConcatStacks_WithItself_DoesNotDuplicate()
+    public void ConcatStacks_DoesNotCopyData()
     {
-        WaggoResponse response = new WaggoResponse().AddInfo("I.1", "once");
+        WaggoResponse<int> inner = new() { Data = 42 };
+        WaggoResponse<int> outer = new();
 
-        response.ConcatStacks(response);
+        outer.ConcatStacks(inner);
 
-        response.Infos.Count.ShouldBe(1);
+        outer.Data.ShouldBe(0);
     }
-
-    [Fact]
-    public void Generic_ImplicitFromValue_IsValidWithValue()
-    {
-        WaggoResponse<int> response = 42;
-
-        response.IsValid.ShouldBeTrue();
-        response.HasValue.ShouldBeTrue();
-        response.Value.ShouldBe(42);
-    }
-
-    [Fact]
-    public void Generic_ImplicitFromError_IsNotValid_AndValueThrows()
-    {
-        WaggoResponse<int> response = s_someError;
-
-        response.IsValid.ShouldBeFalse();
-        response.ValueOrDefault.ShouldBe(0);
-        Should.Throw<InvalidOperationException>(() => response.Value);
-    }
-
-    [Fact]
-    public void Generic_FluentMethods_KeepTheGenericType()
-    {
-        WaggoResponse<string> response = new WaggoResponse<string>()
-            .AddWarning("W.1", "careful")
-            .AddInfo("I.1", "fyi")
-            .SetValue("done");
-
-        response.Value.ShouldBe("done");
-        response.Warnings.Count.ShouldBe(1);
-    }
-
-    [Fact]
-    public void Map_WhenValid_TransformsValue_AndKeepsStacks()
-    {
-        WaggoResponse<int> response = new WaggoResponse<int>().AddWarning("W.1", "careful").SetValue(21);
-
-        WaggoResponse<int> mapped = response.Map(x => x * 2);
-
-        mapped.Value.ShouldBe(42);
-        mapped.HasWarning("W.1").ShouldBeTrue();
-    }
-
-    [Fact]
-    public void Map_WhenInvalid_PropagatesErrors_WithoutValue()
-    {
-        WaggoResponse<int> response = s_someError;
-
-        WaggoResponse<string> mapped = response.Map(x => x.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-        mapped.IsValid.ShouldBeFalse();
-        mapped.HasValue.ShouldBeFalse();
-        mapped.HasError("Test.Error").ShouldBeTrue();
-    }
-
-    [Fact]
-    public void ToResponse_CarriesStacksToAnotherType()
-    {
-        WaggoResponse<int> response = new WaggoResponse<int>().AddError(s_someError);
-
-        WaggoResponse<string> other = response.ToResponse<string>();
-
-        other.HasError("Test.Error").ShouldBeTrue();
-        other.HasValue.ShouldBeFalse();
-    }
-
-    [Fact]
-    public void FromValue_IsValidWithValue()
-    {
-        WaggoResponse<int> response = WaggoResponse.FromValue(7);
-
-        response.IsValid.ShouldBeTrue();
-        response.Value.ShouldBe(7);
-    }
-
-    [Fact]
-    public void FromError_IsNotValid()
-    {
-        WaggoResponse<int> response = WaggoResponse.FromError<int>(s_someError);
-
-        response.IsValid.ShouldBeFalse();
-        response.HasError("Test.Error").ShouldBeTrue();
-    }
-
-    [Fact]
-    public void WaggoMessage_RequiresCodeAndMessage() =>
-        Should.Throw<ArgumentException>(() => new WaggoMessage("", "text"));
 }

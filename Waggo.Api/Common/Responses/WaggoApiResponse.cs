@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Waggo.Api.Common.Responses;
 
 /// <summary>
@@ -23,7 +21,4 @@ public sealed record WaggoApiPagination(
     bool HasPrevious,
     bool HasNext);
 
-public sealed record WaggoApiMessage(
-    string Code,
-    string Message,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Field = null);
+public sealed record WaggoApiMessage(string Code, string Message);

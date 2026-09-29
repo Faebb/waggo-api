@@ -13,10 +13,13 @@ public static class FareCalculator
         ArgumentNullException.ThrowIfNull(table);
         ArgumentNullException.ThrowIfNull(duration);
 
+        WaggoResponse<FareBreakdown> response = new();
+
         WalkRate? rate = table.RateFor(walkType);
         if (rate is null)
         {
-            return PricingErrors.WalkTypeNotPriced(walkType);
+            response.AddError(PricingErrors.WalkTypeNotPriced(walkType));
+            return response;
         }
 
         Money total = rate.BaseFee
@@ -26,6 +29,7 @@ public static class FareCalculator
         Money commission = total.Multiply(table.CommissionRate.Value).RoundToNearest(1m);
         Money payout = total.Subtract(commission);
 
-        return new FareBreakdown(total, commission, payout);
+        response.Data = new FareBreakdown(total, commission, payout);
+        return response;
     }
 }

@@ -34,14 +34,19 @@ public sealed record PageRequest
 
         if (p < 1)
         {
-            response.AddError(InvalidPage, "page");
+            response.AddError(InvalidPage);
         }
 
         if (size is < 1 or > MaxPageSize)
         {
-            response.AddError(InvalidPageSize, "pageSize");
+            response.AddError(InvalidPageSize);
         }
 
-        return response.IsValid ? response.SetValue(new PageRequest(p, size)) : response;
+        if (response.IsValid)
+        {
+            response.Data = new PageRequest(p, size);
+        }
+
+        return response;
     }
 }

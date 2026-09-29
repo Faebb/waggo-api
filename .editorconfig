@@ -174,3 +174,6 @@ dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.CA1515.severity = none
 # XML docs are required only where they add value (public API is documented by convention, not by the compiler)
 dotnet_diagnostic.CS1591.severity = none
+# Plain logger.LogX("{Template}", ...) calls are allowed: simplicity over LoggerMessage source generators
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA1873.severity = none

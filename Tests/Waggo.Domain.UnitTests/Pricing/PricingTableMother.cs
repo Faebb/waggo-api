@@ -18,7 +18,7 @@ internal static class PricingTableMother
         return new PricingTable(
             "COP",
             only.Length == 0 ? rates : rates.Where(r => only.Contains(r.WalkType)),
-            CommissionRate.Create(0.20m).Value,
+            CommissionRate.Create(0.20m).Data,
             roundingIncrement: 100m);
     }
 }

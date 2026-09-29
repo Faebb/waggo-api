@@ -10,7 +10,7 @@ public class WalkDurationTests
     [InlineData(60)]
     [InlineData(120)]
     public void Create_ValidMinutes_Succeeds(int minutes) =>
-        WalkDuration.Create(minutes).Value.Minutes.ShouldBe(minutes);
+        WalkDuration.Create(minutes).Data.Minutes.ShouldBe(minutes);
 
     [Theory]
     [InlineData(0)]
@@ -18,5 +18,5 @@ public class WalkDurationTests
     [InlineData(50)]   // not a multiple of 15
     [InlineData(135)]  // above maximum
     public void Create_InvalidMinutes_FailsWithInvalidDuration(int minutes) =>
-        WalkDuration.Create(minutes).HasError(PricingErrors.InvalidDuration.Code).ShouldBeTrue();
+        WalkDuration.Create(minutes).Errors.ShouldContain(e => e.Code == PricingErrors.InvalidDuration.Code);
 }

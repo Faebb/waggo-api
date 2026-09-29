@@ -27,7 +27,7 @@ public static class WaggoErrorHandling
 
         httpContext.Response.StatusCode = status;
         await httpContext.Response.WriteAsJsonAsync(
-            WaggoApiResponseFactory.FromError(code, message, WaggoApiHttp.TraceId(httpContext)));
+            WaggoApiResponseFactory.FromError(code, message, WaggoApiResult.TraceId(httpContext)));
     }
 
     /// <summary>For <c>UseStatusCodePages</c>: 404/405/... without body get the envelope too.</summary>
@@ -47,6 +47,6 @@ public static class WaggoErrorHandling
         };
 
         await httpContext.Response.WriteAsJsonAsync(
-            WaggoApiResponseFactory.FromError($"Http.{status}", message, WaggoApiHttp.TraceId(httpContext)));
+            WaggoApiResponseFactory.FromError($"Http.{status}", message, WaggoApiResult.TraceId(httpContext)));
     }
 }

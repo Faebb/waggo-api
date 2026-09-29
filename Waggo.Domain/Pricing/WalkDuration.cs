@@ -15,11 +15,15 @@ public sealed record WalkDuration
 
     public static WaggoResponse<WalkDuration> Create(int minutes)
     {
+        WaggoResponse<WalkDuration> response = new();
+
         if (minutes is < MinMinutes or > MaxMinutes || minutes % StepMinutes != 0)
         {
-            return PricingErrors.InvalidDuration;
+            response.AddError(PricingErrors.InvalidDuration);
+            return response;
         }
 
-        return new WalkDuration(minutes);
+        response.Data = new WalkDuration(minutes);
+        return response;
     }
 }

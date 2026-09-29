@@ -12,11 +12,15 @@ public class QuoteFareHandlerTests
 
     public QuoteFareHandlerTests()
     {
-        _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(WaggoResponse.FromValue(new PricingTable(
-            "COP",
-            [new WalkRate(WalkType.Individual, Money.Of(8000m, "COP"), Money.Of(250m, "COP"))],
-            CommissionRate.Create(0.20m).Value,
-            roundingIncrement: 100m)));
+        WaggoResponse<PricingTable> table = new()
+        {
+            Data = new PricingTable(
+                "COP",
+                [new WalkRate(WalkType.Individual, Money.Of(8000m, "COP"), Money.Of(250m, "COP"))],
+                CommissionRate.Create(0.20m).Data,
+                roundingIncrement: 100m),
+        };
+        _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(table);
 
         _sut = new QuoteFareHandler(_provider);
     }
@@ -30,7 +34,7 @@ public class QuoteFareHandlerTests
         WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 60);
 
         result.IsValid.ShouldBeTrue();
-        result.Value.ShouldBe(new FareQuoteResponse("Individual", 60, "COP", 23000m, 4600m, 18400m));
+        result.Data.ShouldBe(new FareQuoteResponse("Individual", 60, "COP", 23000m, 4600m, 18400m));
     }
 
     [Fact]
@@ -47,7 +51,7 @@ public class QuoteFareHandlerTests
     {
         WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 20);
 
-        result.HasError(PricingErrors.InvalidDuration.Code).ShouldBeTrue();
+        result.Errors.ShouldContain(e => e.Code == PricingErrors.InvalidDuration.Code);
         await _provider.DidNotReceive().GetCurrentAsync(Arg.Any<CancellationToken>());
     }
 
@@ -56,21 +60,21 @@ public class QuoteFareHandlerTests
     {
         WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Group, 60);
 
-        result.HasError("Pricing.WalkTypeNotPriced").ShouldBeTrue();
+        result.Errors.ShouldContain(e => e.Code == "Pricing.WalkTypeNotPriced");
     }
 
     [Fact]
     public async Task HandleAsync_ProviderFailsOrWarns_ConcatenatesItsStacks()
     {
-        _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(
-            new WaggoResponse<PricingTable>()
-                .AddWarning("Pricing.StaleRates", "Rates are older than 24h")
-                .AddError("Pricing.RatesUnavailable", "No rates", ErrorType.Unexpected));
+        WaggoResponse<PricingTable> failing = new();
+        failing.AddWarning("Pricing.StaleRates", "Rates are older than 24h");
+        failing.AddError("Pricing.RatesUnavailable", "No rates", ErrorType.Unexpected);
+        _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(failing);
 
         WaggoResponse<FareQuoteResponse> result = await QuoteAsync(WalkType.Individual, 60);
 
-        result.HasWarning("Pricing.StaleRates").ShouldBeTrue();
-        result.HasError("Pricing.RatesUnavailable").ShouldBeTrue();
+        result.Warnings.ShouldContain(w => w.Code == "Pricing.StaleRates");
+        result.Errors.ShouldContain(e => e.Code == "Pricing.RatesUnavailable");
         result.ErrorType.ShouldBe(ErrorType.Unexpected);
     }
 }

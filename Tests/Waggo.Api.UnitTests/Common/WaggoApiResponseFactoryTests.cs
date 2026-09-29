@@ -8,9 +8,9 @@ namespace Waggo.Api.UnitTests.Common;
 public class WaggoApiResponseFactoryTests
 {
     [Fact]
-    public void From_Success_HasDataAndNullPagination()
+    public void From_Valid_HasDataAndNullPagination()
     {
-        WaggoResponse<string> response = new WaggoResponse<string>().SetValue("ok");
+        WaggoResponse<string> response = new() { Data = "ok" };
 
         WaggoApiResponse<string> api = WaggoApiResponseFactory.From(response, "trace-1");
 
@@ -23,11 +23,10 @@ public class WaggoApiResponseFactoryTests
     [Fact]
     public void From_OnlySendsPublicMessages()
     {
-        WaggoResponse<string> response = new WaggoResponse<string>()
-            .AddWarning("W.public", "visible")
-            .AddWarning("W.internal", "log only", MessageVisibility.Internal)
-            .AddInfo("I.internal", "log only", MessageVisibility.Internal)
-            .SetValue("ok");
+        WaggoResponse<string> response = new() { Data = "ok" };
+        response.AddWarning("W.public", "visible");
+        response.AddWarning("W.internal", "log only", MessageVisibility.Internal);
+        response.AddInfo("I.internal", "log only", MessageVisibility.Internal);
 
         WaggoApiResponse<string> api = WaggoApiResponseFactory.From(response, null);
 
@@ -36,33 +35,35 @@ public class WaggoApiResponseFactoryTests
     }
 
     [Fact]
-    public void From_Failure_HasNoData_AndCarriesErrorsWithField()
+    public void From_Invalid_HasNoData_AndCarriesTheErrors()
     {
-        WaggoResponse<string> response = new WaggoResponse<string>()
-            .AddError("Pricing.InvalidDuration", "bad", field: "durationMinutes");
+        WaggoResponse<string> response = new() { Data = "ignored" };
+        response.AddError("Pricing.InvalidDuration", "bad");
 
         WaggoApiResponse<string> api = WaggoApiResponseFactory.From(response, null);
 
         api.Success.ShouldBeFalse();
         api.Data.ShouldBeNull();
-        api.Errors.Single().ShouldBe(new WaggoApiMessage("Pricing.InvalidDuration", "bad", "durationMinutes"));
+        api.Errors.Single().ShouldBe(new WaggoApiMessage("Pricing.InvalidDuration", "bad"));
     }
 
     [Fact]
     public void FromPaged_FillsPagination_AndDataIsTheItems()
     {
-        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Value);
+        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Data);
+        WaggoResponse<PagedList<int>> response = new() { Data = page };
 
-        WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(WaggoResponse.FromValue(page), null);
+        WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(response, null);
 
         api.Data!.Count.ShouldBe(20);
         api.Pagination.ShouldBe(new WaggoApiPagination(2, 20, 45, 3, HasPrevious: true, HasNext: true));
     }
 
     [Fact]
-    public void FromPaged_Failure_HasNullPagination()
+    public void FromPaged_Invalid_HasNullPagination()
     {
-        WaggoResponse<PagedList<int>> response = PageRequest.Create(0, 20).ToResponse<PagedList<int>>();
+        WaggoResponse<PagedList<int>> response = new();
+        response.ConcatStacks(PageRequest.Create(0, 20));
 
         WaggoApiResponse<IReadOnlyList<int>> api = WaggoApiResponseFactory.FromPaged(response, null);
 
@@ -71,16 +72,13 @@ public class WaggoApiResponseFactoryTests
     }
 
     [Theory]
+    [InlineData(ErrorType.None, StatusCodes.Status200OK)]
     [InlineData(ErrorType.Validation, StatusCodes.Status400BadRequest)]
     [InlineData(ErrorType.NotFound, StatusCodes.Status404NotFound)]
     [InlineData(ErrorType.Conflict, StatusCodes.Status409Conflict)]
     [InlineData(ErrorType.Unauthorized, StatusCodes.Status401Unauthorized)]
     [InlineData(ErrorType.Forbidden, StatusCodes.Status403Forbidden)]
     [InlineData(ErrorType.Unexpected, StatusCodes.Status500InternalServerError)]
-    public void StatusCodeFor_MapsTheFirstErrorType(ErrorType type, int status) =>
-        WaggoApiResponseFactory.StatusCodeFor(new WaggoResponse().AddError("X", "x", type)).ShouldBe(status);
-
-    [Fact]
-    public void StatusCodeFor_Success_Is200() =>
-        WaggoApiResponseFactory.StatusCodeFor(new WaggoResponse()).ShouldBe(StatusCodes.Status200OK);
+    public void StatusCodeFor_MapsTheErrorType(ErrorType type, int status) =>
+        WaggoApiResponseFactory.StatusCodeFor(type).ShouldBe(status);
 }

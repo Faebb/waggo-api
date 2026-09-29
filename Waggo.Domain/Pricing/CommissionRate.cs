@@ -11,11 +11,15 @@ public sealed record CommissionRate
 
     public static WaggoResponse<CommissionRate> Create(decimal value)
     {
+        WaggoResponse<CommissionRate> response = new();
+
         if (value is < 0m or > 1m)
         {
-            return PricingErrors.InvalidCommissionRate;
+            response.AddError(PricingErrors.InvalidCommissionRate);
+            return response;
         }
 
-        return new CommissionRate(value);
+        response.Data = new CommissionRate(value);
+        return response;
     }
 }

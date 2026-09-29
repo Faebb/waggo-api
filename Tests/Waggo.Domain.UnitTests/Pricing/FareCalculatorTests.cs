@@ -19,9 +19,9 @@ public class FareCalculatorTests
         WalkType walkType, int minutes, decimal total, decimal commission, decimal payout)
     {
         PricingTable table = PricingTableMother.Default();
-        WalkDuration duration = WalkDuration.Create(minutes).Value;
+        WalkDuration duration = WalkDuration.Create(minutes).Data;
 
-        FareBreakdown fare = FareCalculator.Calculate(table, walkType, duration).Value;
+        FareBreakdown fare = FareCalculator.Calculate(table, walkType, duration).Data;
 
         fare.Total.ShouldBe(Money.Of(total, "COP"));
         fare.Commission.ShouldBe(Money.Of(commission, "COP"));
@@ -39,7 +39,7 @@ public class FareCalculatorTests
         {
             foreach (WalkType type in Enum.GetValues<WalkType>())
             {
-                FareBreakdown fare = FareCalculator.Calculate(table, type, WalkDuration.Create(minutes).Value).Value;
+                FareBreakdown fare = FareCalculator.Calculate(table, type, WalkDuration.Create(minutes).Data).Data;
                 fare.Commission.Add(fare.WalkerPayout).ShouldBe(fare.Total);
             }
         }
@@ -50,11 +50,11 @@ public class FareCalculatorTests
     {
         PricingTable table = PricingTableMother.Default(WalkType.Individual);
 
-        WalkDuration duration = WalkDuration.Create(60).Value;
+        WalkDuration duration = WalkDuration.Create(60).Data;
 
         WaggoResponse<FareBreakdown> result = FareCalculator.Calculate(table, WalkType.Group, duration);
 
         result.IsValid.ShouldBeFalse();
-        result.HasError("Pricing.WalkTypeNotPriced").ShouldBeTrue();
+        result.Errors.ShouldContain(e => e.Code == "Pricing.WalkTypeNotPriced");
     }
 }

@@ -11,10 +11,10 @@ public class CommissionRateTests
     [Theory]
     [MemberData(nameof(ValidRates))]
     public void Create_BetweenZeroAndOne_Succeeds(decimal value) =>
-        CommissionRate.Create(value).Value.Value.ShouldBe(value);
+        CommissionRate.Create(value).Data.Value.ShouldBe(value);
 
     [Theory]
     [MemberData(nameof(InvalidRates))]
     public void Create_OutOfRange_Fails(decimal value) =>
-        CommissionRate.Create(value).HasError(PricingErrors.InvalidCommissionRate.Code).ShouldBeTrue();
+        CommissionRate.Create(value).Errors.ShouldContain(e => e.Code == PricingErrors.InvalidCommissionRate.Code);
 }

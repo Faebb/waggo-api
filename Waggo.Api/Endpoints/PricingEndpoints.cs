@@ -23,7 +23,8 @@ internal static class PricingEndpoints
             {
                 QuoteFareQuery query = new(walkType, durationMinutes);
                 WaggoResponse<FareQuoteResponse> response = await handler.HandleAsync(query, ct);
-                return response.WriteLogs(logger, "QuoteFare").ToApiResult();
+                response.WriteLogs(logger, "QuoteFare");
+                return response.ToApiResult();
             })
             .WithName("QuoteFare")
             .Produces<WaggoApiResponse<FareQuoteResponse>>()

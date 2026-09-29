@@ -4,77 +4,32 @@ using Waggo.Domain.Common;
 namespace Waggo.Application.Common.Logging;
 
 /// <summary>
-/// Writes the stacks of a <see cref="WaggoResponse"/> to the log. The code that owns the response decides
-/// WHERE this happens (usually the endpoint, or a use case that must log something immediately).
-/// Errors → Error, Warnings → Warning, Infos → Information. Each message is written only once,
-/// even if the response is concatenated and written again later.
+/// Writes the stacks of a <see cref="WaggoResponse{T}"/> to the log (Serilog behind <see cref="ILogger"/>):
+/// errors as Error, warnings as Warning, infos as Information.
+/// Call it once, where you decide (usually the endpoint).
 /// </summary>
-public static partial class WaggoResponseLogging
+public static class WaggoResponseLogging
 {
-    public static WaggoResponse WriteLogs(this WaggoResponse response, ILogger logger, string? operation = null)
+    private const string Template = "[{Operation}] {Code}: {Message}";
+
+    public static void WriteLogs<T>(this WaggoResponse<T> response, ILogger logger, string operation)
     {
         ArgumentNullException.ThrowIfNull(response);
         ArgumentNullException.ThrowIfNull(logger);
 
-        string name = operation ?? "operation";
-
-        foreach (WaggoMessage message in response.Errors.Where(m => !m.IsLogged))
+        foreach (WaggoMessage error in response.Errors)
         {
-            LogError(logger, name, message.Code, message.Message, message.Field, message.Visibility);
-            message.MarkAsLogged();
+            logger.LogError(Template, operation, error.Code, error.Message);
         }
 
-        foreach (WaggoMessage message in response.Warnings.Where(m => !m.IsLogged))
+        foreach (WaggoMessage warning in response.Warnings)
         {
-            LogWarning(logger, name, message.Code, message.Message, message.Field, message.Visibility);
-            message.MarkAsLogged();
+            logger.LogWarning(Template, operation, warning.Code, warning.Message);
         }
 
-        foreach (WaggoMessage message in response.Infos.Where(m => !m.IsLogged))
+        foreach (WaggoMessage info in response.Infos)
         {
-            LogInfo(logger, name, message.Code, message.Message, message.Field, message.Visibility);
-            message.MarkAsLogged();
+            logger.LogInformation(Template, operation, info.Code, info.Message);
         }
-
-        return response;
     }
-
-    public static WaggoResponse<T> WriteLogs<T>(
-        this WaggoResponse<T> response,
-        ILogger logger,
-        string? operation = null)
-    {
-        WriteLogs((WaggoResponse)response, logger, operation);
-        return response;
-    }
-
-    [LoggerMessage(EventId = 1001, Level = LogLevel.Error,
-        Message = "[{Operation}] {Code}: {Text} (field: {Field}, visibility: {Visibility})")]
-    private static partial void LogError(
-        ILogger logger,
-        string operation,
-        string code,
-        string text,
-        string? field,
-        MessageVisibility visibility);
-
-    [LoggerMessage(EventId = 1002, Level = LogLevel.Warning,
-        Message = "[{Operation}] {Code}: {Text} (field: {Field}, visibility: {Visibility})")]
-    private static partial void LogWarning(
-        ILogger logger,
-        string operation,
-        string code,
-        string text,
-        string? field,
-        MessageVisibility visibility);
-
-    [LoggerMessage(EventId = 1003, Level = LogLevel.Information,
-        Message = "[{Operation}] {Code}: {Text} (field: {Field}, visibility: {Visibility})")]
-    private static partial void LogInfo(
-        ILogger logger,
-        string operation,
-        string code,
-        string text,
-        string? field,
-        MessageVisibility visibility);
 }

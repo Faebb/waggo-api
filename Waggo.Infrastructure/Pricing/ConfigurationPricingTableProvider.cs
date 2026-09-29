@@ -27,7 +27,7 @@ internal sealed class ConfigurationPricingTableProvider(IOptionsMonitor<PricingO
             Money.Of(kv.Value.BaseFee, o.Currency),
             Money.Of(kv.Value.PerMinute, o.Currency)));
 
-        return Task.FromResult(response.SetValue(
-            new PricingTable(o.Currency, rates, commission.Value, o.RoundingIncrement)));
+        response.Data = new PricingTable(o.Currency, rates, commission.Data, o.RoundingIncrement);
+        return Task.FromResult(response);
     }
 }

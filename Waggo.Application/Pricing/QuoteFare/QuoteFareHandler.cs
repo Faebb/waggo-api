@@ -13,7 +13,7 @@ internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvide
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        WaggoResponse<FareQuoteResponse> response = new WaggoResponse<FareQuoteResponse>();
+        WaggoResponse<FareQuoteResponse> response = new();
 
         WaggoResponse<WalkDuration> duration = WalkDuration.Create(query.DurationMinutes);
         response.ConcatStacks(duration);
@@ -29,25 +29,26 @@ internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvide
             return response;
         }
 
-        WaggoResponse<FareBreakdown> fare = FareCalculator.Calculate(table.Value, query.WalkType, duration.Value);
+        WaggoResponse<FareBreakdown> fare = FareCalculator.Calculate(table.Data, query.WalkType, duration.Data);
         response.ConcatStacks(fare);
         if (!response.IsValid)
         {
             return response;
         }
 
-        FareBreakdown quote = fare.Value;
         response.AddInfo(
             PricingMessages.FareQuoted,
-            $"Fare quoted: {query.WalkType} {duration.Value.Minutes} min = {quote.Total}",
+            $"Fare quoted: {query.WalkType} {duration.Data.Minutes} min = {fare.Data.Total}",
             MessageVisibility.Internal);
 
-        return response.SetValue(new FareQuoteResponse(
+        response.Data = new FareQuoteResponse(
             query.WalkType.ToString(),
-            duration.Value.Minutes,
-            quote.Total.Currency,
-            quote.Total.Amount,
-            quote.Commission.Amount,
-            quote.WalkerPayout.Amount));
+            duration.Data.Minutes,
+            fare.Data.Total.Currency,
+            fare.Data.Total.Amount,
+            fare.Data.Commission.Amount,
+            fare.Data.WalkerPayout.Amount);
+
+        return response;
     }
 }

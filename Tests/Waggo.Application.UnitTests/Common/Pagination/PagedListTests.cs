@@ -7,7 +7,7 @@ public class PagedListTests
     [Fact]
     public void From_ReturnsTheRequestedPage_AndTotals()
     {
-        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Value);
+        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(2, 20).Data);
 
         page.Items.ShouldBe(Enumerable.Range(21, 20));
         page.TotalItems.ShouldBe(45);
@@ -19,7 +19,7 @@ public class PagedListTests
     [Fact]
     public void From_LastPage_HasNoNext()
     {
-        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(3, 20).Value);
+        PagedList<int> page = PagedList.From(Enumerable.Range(1, 45), PageRequest.Create(3, 20).Data);
 
         page.Items.Count.ShouldBe(5);
         page.HasNext.ShouldBeFalse();
@@ -28,7 +28,7 @@ public class PagedListTests
     [Fact]
     public void From_EmptySource_HasZeroPages()
     {
-        PagedList<int> page = PagedList.From(Array.Empty<int>(), PageRequest.Create(1, 20).Value);
+        PagedList<int> page = PagedList.From(Array.Empty<int>(), PageRequest.Create(1, 20).Data);
 
         page.TotalPages.ShouldBe(0);
         page.HasPrevious.ShouldBeFalse();
