@@ -40,7 +40,9 @@ public static class WaggoApiResponseFactory
             traceId);
     }
 
-    /// <summary>Envelope for failures that happen outside a use case (binding errors, unknown routes, exceptions).</summary>
+    /// <summary>
+    /// Envelope for failures that happen outside a use case (binding errors, unknown routes, exceptions).
+    /// </summary>
     public static WaggoApiResponse<object> FromError(string code, string message, string? traceId) =>
         new(false, null, null, [new WaggoApiMessage(code, message)], [], [], traceId);
 

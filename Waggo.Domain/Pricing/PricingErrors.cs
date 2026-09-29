@@ -9,6 +9,10 @@ public static class PricingErrors
         $"La duración del paseo debe estar entre {WalkDuration.MinMinutes} y {WalkDuration.MaxMinutes} minutos, "
         + $"en intervalos de {WalkDuration.StepMinutes}.");
 
+    public static readonly Error InvalidWalkType = new(
+        "Pricing.InvalidWalkType",
+        "El tipo de paseo no es válido.");
+
     public static readonly Error InvalidCommissionRate = new(
         "Pricing.InvalidCommissionRate",
         "La comisión debe estar entre 0 y 1.");

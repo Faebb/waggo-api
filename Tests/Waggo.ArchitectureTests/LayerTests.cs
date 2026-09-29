@@ -65,6 +65,19 @@ public class LayerTests
     }
 
     [Fact]
+    public void Validators_AreSealedAndNotPublic()
+    {
+        TestResult result = Types.InAssembly(s_application)
+            .That().HaveNameEndingWith("Validator")
+            .And().AreClasses()
+            .Should().BeSealed()
+            .And().NotBePublic()
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue(Describe(result));
+    }
+
+    [Fact]
     public void Domain_NeverStoresCardData_Rnf004()
     {
         string[] forbidden = ["CardNumber", "Pan", "Cvv", "Cvc", "ExpirationDate"];

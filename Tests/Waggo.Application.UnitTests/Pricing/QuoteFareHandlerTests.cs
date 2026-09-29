@@ -22,7 +22,7 @@ public class QuoteFareHandlerTests
         };
         _provider.GetCurrentAsync(Arg.Any<CancellationToken>()).Returns(table);
 
-        _sut = new QuoteFareHandler(_provider);
+        _sut = new QuoteFareHandler(new QuoteFareQueryValidator(), _provider);
     }
 
     private Task<WaggoResponse<FareQuoteResponse>> QuoteAsync(WalkType walkType, int minutes) =>

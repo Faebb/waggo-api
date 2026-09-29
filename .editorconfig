@@ -177,3 +177,7 @@ dotnet_diagnostic.CS1591.severity = none
 # Plain logger.LogX("{Template}", ...) calls are allowed: simplicity over LoggerMessage source generators
 dotnet_diagnostic.CA1848.severity = none
 dotnet_diagnostic.CA1873.severity = none
+
+[Tests/**/*.cs]
+# Test names follow Method_Scenario_ExpectedResult, also for async tests (no "Async" suffix)
+dotnet_naming_rule.async_methods_suffix.severity = none

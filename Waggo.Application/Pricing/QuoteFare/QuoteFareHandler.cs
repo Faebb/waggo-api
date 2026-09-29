@@ -1,11 +1,15 @@
+using FluentValidation;
 using Waggo.Application.Abstractions;
+using Waggo.Application.Common.Validation;
 using Waggo.Domain.Common;
 using Waggo.Domain.Pricing;
 
 namespace Waggo.Application.Pricing.QuoteFare;
 
 /// <summary>RF-019: the owner sees the calculated price before confirming a walk.</summary>
-internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvider)
+internal sealed class QuoteFareHandler(
+    IValidator<QuoteFareQuery> validator,
+    IPricingTableProvider pricingTableProvider)
     : IQueryHandler<QuoteFareQuery, FareQuoteResponse>
 {
     public async Task<WaggoResponse<FareQuoteResponse>> HandleAsync(
@@ -14,6 +18,13 @@ internal sealed class QuoteFareHandler(IPricingTableProvider pricingTableProvide
     {
         ArgumentNullException.ThrowIfNull(query);
         WaggoResponse<FareQuoteResponse> response = new();
+
+        WaggoResponse<QuoteFareQuery> validation = await validator.ValidateToResponseAsync(query, cancellationToken);
+        response.ConcatStacks(validation);
+        if (!response.IsValid)
+        {
+            return response;
+        }
 
         WaggoResponse<WalkDuration> duration = WalkDuration.Create(query.DurationMinutes);
         response.ConcatStacks(duration);
