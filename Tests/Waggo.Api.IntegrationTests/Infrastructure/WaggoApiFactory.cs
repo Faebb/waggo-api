@@ -10,8 +10,7 @@ namespace Waggo.Api.IntegrationTests.Infrastructure;
 /// </summary>
 public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
-        .WithImage("postgis/postgis:17-3.5")
+    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder("postgis/postgis:17-3.5")
         .WithDatabase("waggo_tests")
         .WithUsername("waggo")
         .WithPassword("waggo")
