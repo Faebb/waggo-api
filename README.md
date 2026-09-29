@@ -1,9 +1,12 @@
 # waggo-api
 
 Backend de **Waggo — Plataforma Inteligente para Paseo Seguro de Perros**.
-.NET 10 · ASP.NET Core Minimal APIs · Clean Architecture · PostgreSQL + PostGIS · Docker · TDD.
 
-> App móvil: [Faebb/waggo-mobile](https://github.com/Faebb/waggo-mobile)
+Waggo conecta a dueños de perros con paseadores **verificados**: el dueño solicita un paseo, sigue el recorrido en vivo y paga solo cuando el servicio termina bien. Este repo es la API REST que usan la app móvil y la web: identidad y roles, mascotas, paseos, seguimiento GPS, mensajería, pagos y tarifas.
+
+.NET 10 · ASP.NET Core Minimal APIs · Clean Architecture · PostgreSQL + PostGIS · Serilog · FluentValidation · Docker · TDD.
+
+> App móvil: [Faebb/waggo-mobile](https://github.com/Faebb/waggo-mobile) · Cómo usar todo en conjunto: [Faebb/waggo-workspace](https://github.com/Faebb/waggo-workspace)
 
 ## Requisitos
 - .NET SDK 10
@@ -12,7 +15,7 @@ Backend de **Waggo — Plataforma Inteligente para Paseo Seguro de Perros**.
 ## Inicio rápido
 ```bash
 cp .env.example .env
-docker compose up -d --build
+docker compose up -d --build           # API :8080 + PostGIS :5432
 curl http://localhost:8080/health/ready
 curl "http://localhost:8080/api/v1/pricing/quote?walkType=Individual&durationMinutes=60"
 ```
@@ -21,54 +24,67 @@ Sin Docker para la API (solo la BD en contenedor):
 docker compose up -d db
 dotnet run --project Waggo.Api      # http://localhost:5080
 ```
-OpenAPI (solo Development): `/openapi/v1.json`. En Development no se necesita token: un usuario de desarrollo con todos los roles firma cada request (header `X-Dev-Roles` para probar otros roles).
+- OpenAPI (solo Development): `/openapi/v1.json`.
+- En Development no se necesita token: un usuario de desarrollo con los roles `owner`, `walker` y `admin` firma cada request. Para probar otro rol envía el header `X-Dev-Roles: walker`.
+- Health checks: `/health/live` (el proceso responde) y `/health/ready` (PostgreSQL disponible).
+
+## Comandos
+| Comando | Qué hace |
+|---|---|
+| `dotnet build` | Compila; los warnings (incluidas las convenciones) son errores |
+| `dotnet test --filter "FullyQualifiedName!~IntegrationTests"` | Loop TDD rápido, sin Docker |
+| `dotnet test` | Todas las pruebas (las de integración necesitan Docker) |
+| `dotnet format` | Aplica el formato y las convenciones de `.editorconfig` |
 
 ## Arquitectura
+Cada capa es un proyecto en la raíz del repo; las pruebas están en `Tests/` y replican las carpetas del proyecto que prueban.
+
 ```
 Waggo.sln
-├─ Waggo.Domain          → entidades, value objects, reglas (sin dependencias)
-├─ Waggo.Application     → casos de uso (queries/commands + handlers), puertos
-├─ Waggo.Infrastructure  → EF Core + Npgsql, adaptadores externos
-├─ Waggo.Api             → endpoints, DI, configuración
-└─ Tests/                        (carpeta física + carpeta de solución)
+├─ Waggo.Domain          → reglas de negocio puras: entidades, value objects, enums, errores, excepciones
+├─ Waggo.Application     → casos de uso (Commands/Queries + handlers + validadores de negocio), interfaces
+├─ Waggo.Infrastructure  → EF Core + Npgsql, implementaciones de las interfaces, opciones
+├─ Waggo.Api             → endpoints Minimal API, DTO y su validación, middleware, auth, respuestas
+└─ Tests/
    ├─ Waggo.Domain.UnitTests
    ├─ Waggo.Application.UnitTests
-   ├─ Waggo.Api.IntegrationTests   (requiere Docker)
-   ├─ Waggo.Api.UnitTests          (mapeo a WaggoApiResponse)
+   ├─ Waggo.Api.UnitTests          (validadores de DTO, middleware, respuestas)
+   ├─ Waggo.Api.IntegrationTests   (API completa + PostgreSQL real; requiere Docker)
    └─ Waggo.ArchitectureTests      (reglas de dependencia entre capas)
 ```
-Cada capa es un proyecto en la raíz del repositorio (sin agrupar en ninguna carpeta); todos los proyectos de pruebas viven en la carpeta `Tests/`.
-Dentro de cada capa el código se agrupa **por módulo** (`Pricing`, `Identity`, `Walks`, `Tracking`, `Payments`...) para poder extraer módulos a microservicios más adelante (RNF-009).
+- Regla de dependencia: `Api → Infrastructure → Application → Domain`, verificada por `Waggo.ArchitectureTests`.
+- Dentro de cada capa, carpetas **por tipo** (`Enums/`, `ValueObjects/`, `Exceptions/`...) con una subcarpeta por módulo (`Pricing/`). Detalle: vault `03 Desarrollo/Estructura de carpetas del backend.md` (ADR-012).
 
-Regla de dependencia: `Api → Infrastructure → Application → Domain`. La verifica `Waggo.ArchitectureTests`.
+## Cómo se escribe el código
+| Tema | Regla |
+|---|---|
+| Convenciones (ADR-008) | Nunca `var`; `_camelCase` y `s_camelCase` en campos; un tipo por archivo; código en inglés, mensajes al usuario en español. El build y el CI las hacen cumplir. |
+| Respuestas (ADR-007) | Toda operación devuelve `WaggoResponse<T>` (pilas `Errors`, `Warnings`, `Infos`, `IsValid`), que se encadenan con `ConcatStacks`. Todo endpoint responde `WaggoApiResponse<T>`. |
+| Logging | Serilog. Los métodos no escriben al log: quien llama decide con `response.WriteLogs(logger, "Operacion")`. |
+| Validación (ADR-009) | FluentValidation en dos capas: el DTO en `Waggo.Api` y las reglas de negocio en `Waggo.Application`. |
+| Errores (ADR-010) | Errores esperados en `WaggoResponse`; lo que impide continuar lanza una excepción custom que el middleware convierte en el HTTP correcto. El usuario nunca ve la excepción real. |
+| Seguridad (ADR-011) | OAuth 2.0 con JWT; roles `owner`, `walker` y `admin`; cada endpoint declara su política. |
 
-## Respuestas y logging (ADR-007)
-- Toda operación devuelve `WaggoResponse<T>` (pilas `Errors`, `Warnings`, `Infos`); se encadenan con `ConcatStacks`.
-- Los métodos no escriben al log: quien llama decide con `response.WriteLogs(logger, "Operacion")`. Logging con **Serilog** (sección `Serilog` de `appsettings.json`).
-- Todo endpoint responde `WaggoApiResponse<T>`: `success`, `data`, `pagination` (`null` si no pagina), `errors`, `warnings`, `infos`, `traceId`.
-
+Formato de toda respuesta:
 ```json
 { "success": false, "data": null, "pagination": null,
   "errors": [{ "code": "Pricing.InvalidDuration", "message": "..." }],
   "warnings": [], "infos": [], "traceId": "..." }
 ```
-Guía completa en el vault: `03 Desarrollo/Convención de respuestas y logging.md`.
 
 ## Flujo TDD
-1. 🔴 Escribe la prueba que falla (aceptación en `IntegrationTests`, luego unitarias en `Domain`/`Application`).
+1. 🔴 Escribe la prueba que falla (aceptación en `IntegrationTests`, luego unitarias).
 2. 🟢 Escribe el mínimo código para pasarla.
 3. 🔵 Refactoriza con las pruebas en verde.
 
-```bash
-dotnet test                                              # todo
-dotnet test --filter "FullyQualifiedName!~IntegrationTests"   # loop rápido (sin Docker)
-dotnet watch test --project Tests/Waggo.Domain.UnitTests
-```
+Commits: [Conventional Commits](https://www.conventionalcommits.org/) — `test(pricing): …` → `feat(pricing): …` → `refactor(pricing): …`. Los PR entran con *squash and merge* y su título se valida en CI.
 
-Commits: [Conventional Commits](https://www.conventionalcommits.org/) — `test(pricing): …` → `feat(pricing): …` → `refactor(pricing): …`.
+## Trabajar con Claude Code
+- `CLAUDE.md` tiene las reglas del repo: basta con clonar y abrir `claude` aquí para trabajar solo en el backend.
+- Para el flujo completo (specs, agentes TDD, checklists, backend + mobile) abre Claude desde [waggo-workspace](https://github.com/Faebb/waggo-workspace).
 
 ## Slice de ejemplo: cotización de tarifa (RF-019 / RF-018)
-`GET /api/v1/pricing/quote?walkType=Individual&durationMinutes=60`
+`GET /api/v1/pricing/quote?walkType=Individual&durationMinutes=60` (rol `owner`)
 ```json
 { "success": true,
   "data": { "walkType": "Individual", "durationMinutes": 60, "currency": "COP",
