@@ -29,6 +29,11 @@ public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Waggo", _db.GetConnectionString());
+
+        // No OAuth server in tests: requests are signed in as a development user with the owner role.
+        // Other roles can be tried per request with the X-Dev-Roles header.
+        builder.UseSetting("Authentication:UseDevelopmentUser", "true");
+        builder.UseSetting("Authentication:DevelopmentUser:Roles:0", "owner");
     }
 }
 

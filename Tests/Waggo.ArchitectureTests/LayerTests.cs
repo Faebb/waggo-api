@@ -78,6 +78,17 @@ public class LayerTests
     }
 
     [Fact]
+    public void CustomExceptions_AreSealed_AndLiveInDomain()
+    {
+        TestResult result = Types.InAssembly(s_domain)
+            .That().Inherit(typeof(Waggo.Domain.Common.Exceptions.WaggoException))
+            .Should().BeSealed()
+            .GetResult();
+
+        result.IsSuccessful.ShouldBeTrue(Describe(result));
+    }
+
+    [Fact]
     public void Domain_NeverStoresCardData_Rnf004()
     {
         string[] forbidden = ["CardNumber", "Pan", "Cvv", "Cvc", "ExpirationDate"];

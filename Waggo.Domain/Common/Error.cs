@@ -15,5 +15,11 @@ public enum ErrorType
     Conflict,
     Unauthorized,
     Forbidden,
+
+    /// <summary>A business rule prevents the operation (e.g. the walker is not verified yet).</summary>
+    BusinessRule,
+
+    /// <summary>An external service (payments, maps, identity) is not available.</summary>
+    ServiceUnavailable,
     Unexpected,
 }

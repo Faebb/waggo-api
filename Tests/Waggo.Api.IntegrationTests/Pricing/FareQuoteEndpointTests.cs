@@ -48,7 +48,7 @@ public class FareQuoteEndpointTests(WaggoApiFactory factory)
     }
 
     [Fact]
-    public async Task Get_UnknownWalkType_Returns400Envelope()
+    public async Task Get_UnknownWalkType_FailsTheDtoValidation()
     {
         using HttpClient client = factory.CreateClient();
 
@@ -56,6 +56,32 @@ public class FareQuoteEndpointTests(WaggoApiFactory factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
-        body!.Errors.Single().Code.ShouldBe(WaggoErrorHandling.InvalidRequestCode);
+        body!.Errors.Single().Code.ShouldBe("Request.InvalidValue");
+    }
+
+    [Fact]
+    public async Task Get_MissingWalkType_FailsTheDtoValidation()
+    {
+        using HttpClient client = factory.CreateClient();
+
+        HttpResponseMessage response =
+            await client.GetAsync(new Uri("/api/v1/pricing/quote?durationMinutes=60", UriKind.Relative));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
+        body!.Errors.Single().Code.ShouldBe("Request.Required");
+    }
+
+    [Fact]
+    public async Task Get_AsWalker_Returns403Envelope()
+    {
+        using HttpClient client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Dev-Roles", "walker");
+
+        HttpResponseMessage response = await client.GetAsync(Quote("Individual", 60));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
+        body!.Errors.Single().Code.ShouldBe("Auth.Forbidden");
     }
 }

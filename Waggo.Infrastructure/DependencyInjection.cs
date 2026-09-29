@@ -24,7 +24,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IPricingTableProvider, ConfigurationPricingTableProvider>();
 
-        services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres");
+        services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres", tags: ["ready"]);
 
         return services;
     }

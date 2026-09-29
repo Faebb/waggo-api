@@ -6,12 +6,14 @@ namespace Waggo.Api.IntegrationTests;
 [Collection(ApiCollection.Name)]
 public class HealthEndpointTests(WaggoApiFactory factory)
 {
-    [Fact]
-    public async Task Get_Health_ReturnsHealthy_WhenDatabaseIsReachable()
+    [Theory]
+    [InlineData("/health/live")]
+    [InlineData("/health/ready")]
+    public async Task Get_Health_ReturnsHealthy_WhenDatabaseIsReachable(string path)
     {
         using HttpClient client = factory.CreateClient();
 
-        HttpResponseMessage response = await client.GetAsync(new Uri("/health", UriKind.Relative));
+        HttpResponseMessage response = await client.GetAsync(new Uri(path, UriKind.Relative));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).ShouldBe("Healthy");

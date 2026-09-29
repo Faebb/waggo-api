@@ -53,6 +53,8 @@ public static class WaggoApiResponseFactory
         ErrorType.Conflict => StatusCodes.Status409Conflict,
         ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
         ErrorType.Forbidden => StatusCodes.Status403Forbidden,
+        ErrorType.BusinessRule => StatusCodes.Status422UnprocessableEntity,
+        ErrorType.ServiceUnavailable => StatusCodes.Status503ServiceUnavailable,
         ErrorType.Unexpected => StatusCodes.Status500InternalServerError,
         _ => StatusCodes.Status400BadRequest,
     };

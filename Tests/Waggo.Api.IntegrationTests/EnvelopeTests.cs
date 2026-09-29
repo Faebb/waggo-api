@@ -19,6 +19,6 @@ public class EnvelopeTests(WaggoApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
         body!.Success.ShouldBeFalse();
-        body.Errors.Single().Code.ShouldBe("Http.404");
+        body.Errors.Single().Code.ShouldBe("Http.NotFound");
     }
 }
