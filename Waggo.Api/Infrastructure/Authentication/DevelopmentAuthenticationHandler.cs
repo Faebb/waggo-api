@@ -9,7 +9,8 @@ namespace Waggo.Api.Infrastructure.Authentication;
 /// <summary>
 /// Development-only authentication: every request is signed in as the configured development user, so no token
 /// is needed. The roles can be overridden per request with the <c>X-Dev-Roles</c> header (comma separated) to try
-/// the role-based rules, e.g. <c>X-Dev-Roles: walker</c>.
+/// the role-based rules, e.g. <c>X-Dev-Roles: walker</c>, and the user with <c>X-Dev-User-Id</c> to act as another
+/// user (e.g. to check that an owner never sees the pets of another one).
 /// </summary>
 internal sealed class DevelopmentAuthenticationHandler(
     IOptionsMonitor<DevelopmentAuthenticationOptions> options,
@@ -19,10 +20,13 @@ internal sealed class DevelopmentAuthenticationHandler(
 {
     public const string SchemeName = "Development";
     public const string RolesHeader = "X-Dev-Roles";
+    public const string UserIdHeader = "X-Dev-User-Id";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         DevelopmentUserSettings user = Options.User;
+        string? userIdHeader = Request.Headers[UserIdHeader];
+        string userId = string.IsNullOrWhiteSpace(userIdHeader) ? user.Id : userIdHeader.Trim();
         string? rolesHeader = Request.Headers[RolesHeader];
         string[] roles = string.IsNullOrWhiteSpace(rolesHeader)
             ? user.Roles
@@ -30,7 +34,7 @@ internal sealed class DevelopmentAuthenticationHandler(
 
         List<Claim> claims =
         [
-            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.NameIdentifier, userId),
             new(ClaimTypes.Name, user.Name),
             .. roles.Select(role => new Claim(ClaimTypes.Role, role)),
         ];

@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
+using Waggo.Api.Endpoints.Pets;
 using Waggo.Api.Endpoints.Pricing;
 using Waggo.Api.Infrastructure.Errors;
 using Waggo.Api.Infrastructure.Middleware;
+using Waggo.Infrastructure;
 
 namespace Waggo.Api.Infrastructure.Extensions;
 
@@ -56,7 +58,22 @@ public static class PipelineExtensions
 
         RouteGroupBuilder v1 = app.MapGroup("/api/v1");
         v1.MapPricingEndpoints();
+        v1.MapPetsEndpoints();
 
         return app;
+    }
+
+    /// <summary>
+    /// Development and Testing create or update the database schema on startup, so <c>docker compose up</c> and the
+    /// integration tests work without extra steps. Other environments run the migrations as a deploy step.
+    /// </summary>
+    public static async Task MigrateDatabaseIfLocalAsync(this WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+        {
+            await app.Services.MigrateDatabaseAsync(app.Lifetime.ApplicationStopping);
+        }
     }
 }
