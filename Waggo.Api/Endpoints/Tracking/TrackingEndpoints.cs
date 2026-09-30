@@ -4,8 +4,10 @@ using Waggo.Api.Infrastructure.Responses;
 using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Tracking;
+using Waggo.Application.Tracking.Commands.RaiseEmergency;
 using Waggo.Application.Tracking.Commands.RecordTrack;
 using Waggo.Application.Tracking.Queries.GetRoute;
+using Waggo.Application.Tracking.Queries.ListWalkAlerts;
 using Waggo.Domain.Common;
 
 namespace Waggo.Api.Endpoints.Tracking;
@@ -30,6 +32,19 @@ internal static class TrackingEndpoints
             .RequireAuthorization()
             .Produces<WaggoApiResponse<RouteResponse>>();
 
+        // RF-012: owner or assigned walker; the handler checks who the caller is.
+        routes.MapPost("/walks/{id:guid}/emergency", RaiseEmergencyAsync)
+            .WithTags("Tracking")
+            .WithName("RaiseEmergency")
+            .RequireAuthorization()
+            .Produces<WaggoApiResponse<WalkAlertResponse>>();
+
+        routes.MapGet("/walks/{id:guid}/alerts", ListWalkAlertsAsync)
+            .WithTags("Tracking")
+            .WithName("ListWalkAlerts")
+            .RequireAuthorization()
+            .Produces<WaggoApiResponse<IReadOnlyList<WalkAlertResponse>>>();
+
         return routes;
     }
 
@@ -53,6 +68,30 @@ internal static class TrackingEndpoints
     {
         WaggoResponse<RouteResponse> response = await handler.HandleAsync(new GetRouteQuery(id), cancellationToken);
         response.WriteLogs(logger, "GetRoute");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> RaiseEmergencyAsync(
+        Guid id,
+        RaiseEmergencyRequest request,
+        ICommandHandler<RaiseEmergencyCommand, WalkAlertResponse> handler,
+        ILogger<RaiseEmergencyRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<WalkAlertResponse> response = await handler.HandleAsync(request.ToCommand(id), cancellationToken);
+        response.WriteLogs(logger, "RaiseEmergency");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ListWalkAlertsAsync(
+        Guid id,
+        IQueryHandler<ListWalkAlertsQuery, IReadOnlyList<WalkAlertResponse>> handler,
+        ILogger<ListWalkAlertsQuery> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<IReadOnlyList<WalkAlertResponse>> response =
+            await handler.HandleAsync(new ListWalkAlertsQuery(id), cancellationToken);
+        response.WriteLogs(logger, "ListWalkAlerts");
         return response.ToApiResult();
     }
 }

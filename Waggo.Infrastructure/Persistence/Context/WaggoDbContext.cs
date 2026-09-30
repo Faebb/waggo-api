@@ -16,6 +16,8 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
 
     public DbSet<TrackPoint> TrackPoints => Set<TrackPoint>();
 
+    public DbSet<WalkAlert> WalkAlerts => Set<WalkAlert>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
