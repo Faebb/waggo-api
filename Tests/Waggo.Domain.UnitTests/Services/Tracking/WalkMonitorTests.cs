@@ -27,7 +27,7 @@ public class WalkMonitorTests
     [Fact]
     public void Check_LeavingTheZone_RaisesAGeofenceAlertWhereItLeft()
     {
-        IReadOnlyList<WalkAlert> alerts = Check([At(4.6400, 0)], [At(4.6500, 3), At(4.6631, 6)]);
+        IReadOnlyList<WalkAlert> alerts = Check([At(4.6400, 0)], [At(4.6450, 3), At(4.6631, 6)]);
 
         WalkAlert alert = alerts.Single();
         alert.Kind.ShouldBe(AlertKind.Geofence);

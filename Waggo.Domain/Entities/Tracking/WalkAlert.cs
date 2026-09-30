@@ -22,7 +22,8 @@ public sealed class WalkAlert
 
     public AlertKind Kind { get; private set; }
 
-    public WalkParty RaisedBy { get; private set; }
+    /// <summary>Who raised it; null when the platform raised it (geofence, anomaly).</summary>
+    public WalkParty? RaisedBy { get; private set; }
 
     public string? Message { get; private set; }
 
@@ -30,6 +31,21 @@ public sealed class WalkAlert
     public GeoPoint? Location { get; private set; }
 
     public DateTimeOffset RaisedAt { get; private set; }
+
+    /// <summary>The platform detected something from the route (RF-009, RF-010).</summary>
+    public static WalkAlert RaiseAutomatic(Guid walkId, AlertKind kind, GeoPoint location, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+        return new WalkAlert
+        {
+            Id = Guid.CreateVersion7(at),
+            WalkId = walkId,
+            Kind = kind,
+            RaisedBy = null,
+            Location = location,
+            RaisedAt = at,
+        };
+    }
 
     /// <summary>The owner or the walker presses the emergency button. Message and location are optional.</summary>
     public static WaggoResponse<WalkAlert> RaiseEmergency(

@@ -21,7 +21,8 @@ internal sealed class WalkAlertConfiguration : IEntityTypeConfiguration<WalkAler
         builder.HasIndex(alert => alert.WalkId);
 
         builder.Property(alert => alert.Kind).HasConversion<string>().HasMaxLength(20).IsRequired();
-        builder.Property(alert => alert.RaisedBy).HasConversion<string>().HasMaxLength(10).IsRequired();
+        // Null when the platform raised the alert (geofence, anomaly).
+        builder.Property(alert => alert.RaisedBy).HasConversion<string>().HasMaxLength(10);
         builder.Property(alert => alert.Message).HasMaxLength(WalkAlert.MaxMessageLength);
         // The location is optional; EF Core never passes null to a converter, so the non-null one is reused.
         builder.Property(alert => alert.Location)
