@@ -147,6 +147,16 @@ Las posiciones se guardan en `tracking.track_points` (GiST en la posición, BRIN
 
 Estados: `Requested → Accepted → InProgress → Completed`, o `Cancelled`. El punto de recogida se guarda como `geography(Point, 4326)` de PostGIS con índice GiST, para el matching por cercanía (RF-006).
 
+## Pagos (RF-015 – RF-018)
+Sin efectivo, como en Uber. Al **pedir** el paseo se retiene el total en el método de pago del dueño; si la pasarela lo rechaza, responde `422 Payments.Declined` y el paseo no se crea. Al **cancelar**, la retención se libera. Al **terminar**, se cobra: la comisión queda para Waggo y `walkerPayout` va al paseador. Solo se guarda la referencia de la pasarela, nunca datos de tarjeta (RNF-004). Tabla `payments.walk_payments`.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/v1/walks/{id}/payment` | Estado del pago (`Held`, `Captured`, `Released`) para el dueño o el paseador asignado |
+| `GET` | `/api/v1/payments/earnings` | Lo que ha ganado el paseador: total y paseos cobrados |
+
+Mientras se elige el proveedor (Stripe o MercadoPago) solo existe la pasarela **simulada** (`Payments:Provider = Simulated`). Viene configurada en Development y en las pruebas, y en cualquier otro ambiente la API no arranca. La simulación rechaza a los usuarios cuyo id contiene `card-declined`, así que un rechazo se prueba con el encabezado `X-Dev-User-Id: owner-card-declined`.
+
 ## Base de datos y datos sensibles
 - EF Core + Npgsql con nombres `snake_case` y un schema por módulo (`pets`, `walks`, …). Las posiciones usan PostGIS a través de NetTopologySuite; el dominio solo conoce su `GeoPoint`.
 - Las columnas sensibles (hoy `pets.medical_notes`) se guardan **cifradas con AES-256-GCM** (RNF-003). La llave es `Encryption:Key`: 32 bytes aleatorios en base64 (`openssl rand -base64 32`). En Development viene en `appsettings.Development.json`; en cualquier otro ambiente se configura con un secreto o con la variable `Encryption__Key`, y la API no arranca sin ella.
