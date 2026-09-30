@@ -7,8 +7,10 @@ using Waggo.Application.Pets.Queries.GetPet;
 using Waggo.Application.Pets.Queries.ListMyPets;
 using Waggo.Application.Pricing.Queries.QuoteFare;
 using Waggo.Application.Tracking;
+using Waggo.Application.Tracking.Commands.RaiseEmergency;
 using Waggo.Application.Tracking.Commands.RecordTrack;
 using Waggo.Application.Tracking.Queries.GetRoute;
+using Waggo.Application.Tracking.Queries.ListWalkAlerts;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.AcceptWalk;
 using Waggo.Application.Walks.Commands.CancelWalk;
@@ -51,6 +53,9 @@ public static class DependencyInjection
 
         services.AddScoped<ICommandHandler<RecordTrackCommand, int>, RecordTrackHandler>();
         services.AddScoped<IQueryHandler<GetRouteQuery, RouteResponse>, GetRouteHandler>();
+        services.AddScoped<ICommandHandler<RaiseEmergencyCommand, WalkAlertResponse>, RaiseEmergencyHandler>();
+        services.AddScoped<IQueryHandler<ListWalkAlertsQuery, IReadOnlyList<WalkAlertResponse>>,
+            ListWalkAlertsHandler>();
         return services;
     }
 }

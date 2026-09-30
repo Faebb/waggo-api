@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IPetRepository, PetRepository>();
         services.AddScoped<IWalkRepository, WalkRepository>();
         services.AddScoped<ITrackPointRepository, TrackPointRepository>();
+        services.AddScoped<IWalkAlertRepository, WalkAlertRepository>();
 
         services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres", tags: ["ready"]);
 
