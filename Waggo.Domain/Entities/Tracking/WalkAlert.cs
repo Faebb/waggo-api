@@ -1,5 +1,6 @@
 using Waggo.Domain.Common;
 using Waggo.Domain.Enums.Tracking;
+using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Tracking;
 using Waggo.Domain.ValueObjects.Walks;
 
@@ -21,7 +22,7 @@ public sealed class WalkAlert
 
     public AlertKind Kind { get; private set; }
 
-    public AlertParty RaisedBy { get; private set; }
+    public WalkParty RaisedBy { get; private set; }
 
     public string? Message { get; private set; }
 
@@ -33,7 +34,7 @@ public sealed class WalkAlert
     /// <summary>The owner or the walker presses the emergency button. Message and location are optional.</summary>
     public static WaggoResponse<WalkAlert> RaiseEmergency(
         Guid walkId,
-        AlertParty raisedBy,
+        WalkParty raisedBy,
         string? message,
         GeoPoint? location,
         DateTimeOffset now)

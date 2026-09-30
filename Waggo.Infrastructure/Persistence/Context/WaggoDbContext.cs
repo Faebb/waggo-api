@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Waggo.Domain.Entities.Messaging;
 using Waggo.Domain.Entities.Pets;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Entities.Walks;
@@ -17,6 +18,8 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
     public DbSet<TrackPoint> TrackPoints => Set<TrackPoint>();
 
     public DbSet<WalkAlert> WalkAlerts => Set<WalkAlert>();
+
+    public DbSet<WalkMessage> WalkMessages => Set<WalkMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -143,6 +143,12 @@ public sealed class Walk
         return response;
     }
 
+    /// <summary>Whether <paramref name="userId"/> is this walk's owner, its walker, or nobody in it (null).</summary>
+    public WalkParty? PartyOf(string userId) =>
+        userId == OwnerId ? WalkParty.Owner
+        : WalkerId is not null && userId == WalkerId ? WalkParty.Walker
+        : null;
+
     /// <summary>A walker takes the request, like a driver accepting a ride. The first one wins.</summary>
     public WaggoResponse<Walk> Accept(string walkerId, DateTimeOffset now)
     {

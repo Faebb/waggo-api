@@ -131,6 +131,8 @@ Lado del paseador (rol `walker`), como un conductor que ve solicitudes:
 
 **Emergencia (RF-012)**: `POST /api/v1/walks/{id}/emergency` (dueño o paseador asignado; `message`, `latitude` y `longitude` opcionales) mientras el paseo está aceptado o en curso, y `GET /api/v1/walks/{id}/alerts` para ver las alertas, la más reciente primero. Se guardan en `tracking.walk_alerts`.
 
+**Chat (RF-013)**: `POST /api/v1/walks/{id}/messages` `{ text }` y `GET /api/v1/walks/{id}/messages?after={messageId}` para el dueño y el paseador asignado. Se escribe mientras el paseo está aceptado o en curso (`422 Messages.ChatClosed` después) y se lee siempre. Tabla `messaging.walk_messages`.
+
 Las posiciones se guardan en `tracking.track_points` (GiST en la posición, BRIN en el tiempo). Por ahora la app consulta la ruta cada pocos segundos; SignalR (RNF-007) llegará en otro slice.
 
 Estados: `Requested → Accepted → InProgress → Completed`, o `Cancelled`. El punto de recogida se guarda como `geography(Point, 4326)` de PostGIS con índice GiST, para el matching por cercanía (RF-006).
