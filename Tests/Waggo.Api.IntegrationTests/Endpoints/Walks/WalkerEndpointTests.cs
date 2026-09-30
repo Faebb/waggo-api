@@ -46,6 +46,26 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     }
 
     [Fact]
+    public async Task Available_WithLocation_LeavesOutRequestsFartherThan5Km_RF006()
+    {
+        using HttpClient owner = Client("owner");
+        using HttpClient walker = Client("walker");
+        WalkResponse justOutside = await RequestWalkAsync(owner, 4.6830, -74.0645); // ~5.2 km
+        WalkResponse far = await RequestWalkAsync(owner, 4.7081, -74.0645);        // ~8 km
+        WalkResponse near = await RequestWalkAsync(owner, 4.6450, -74.0645);       // ~1 km
+
+        List<AvailableWalkResponse> offers = await AvailableAsync(walker, "?latitude=4.6361&longitude=-74.0645");
+        List<AvailableWalkResponse> all = await AvailableAsync(walker);
+
+        offers.ShouldContain(w => w.Id == near.Id);
+        offers.ShouldNotContain(w => w.Id == justOutside.Id);
+        offers.ShouldNotContain(w => w.Id == far.Id);
+        offers.ShouldAllBe(w => w.DistanceKm <= 5);
+        offers.Select(w => w.DistanceKm).ShouldBeInOrder(SortDirection.Ascending);
+        all.ShouldContain(w => w.Id == far.Id);
+    }
+
+    [Fact]
     public async Task Available_HidesCancelledWalksAndTheWalkersOwnWalks()
     {
         string ownerId = NewId("owner");
