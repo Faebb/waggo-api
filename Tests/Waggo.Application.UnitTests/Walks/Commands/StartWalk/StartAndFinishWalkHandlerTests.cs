@@ -1,12 +1,16 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Walks;
+using Waggo.Application.Common.Models.Payments;
 using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.UnitTests.TestDoubles;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.FinishWalk;
 using Waggo.Application.Walks.Commands.StartWalk;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Payments;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
 
@@ -15,6 +19,8 @@ namespace Waggo.Application.UnitTests.Walks.Commands.StartWalk;
 public class StartAndFinishWalkHandlerTests
 {
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
+    private readonly IWalkPaymentRepository _payments = Substitute.For<IWalkPaymentRepository>();
+    private readonly IPaymentGateway _gateway = PaymentMother.ApprovingGateway();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly Walk _walk = WalkMother.Requested();
 
@@ -27,7 +33,7 @@ public class StartAndFinishWalkHandlerTests
 
     private StartWalkHandler Start() => new(_walks, _currentUser, new FixedTimeProvider());
 
-    private FinishWalkHandler Finish() => new(_walks, _currentUser, new FixedTimeProvider());
+    private FinishWalkHandler Finish() => new(_walks, _payments, _gateway, _currentUser, new FixedTimeProvider());
 
     [Fact]
     public async Task Start_AssignedWalker_StartsAndSaves()
@@ -66,5 +72,20 @@ public class StartAndFinishWalkHandlerTests
             await Finish().HandleAsync(new FinishWalkCommand(_walk.Id), CancellationToken.None);
 
         result.Data.Status.ShouldBe("Completed");
+    }
+
+    [Fact]
+    public async Task Finish_HeldPayment_CapturesItAndPaysTheWalker()
+    {
+        WalkPayment payment = WalkPayment.Hold(_walk, "sim_hold_1", FixedTimeProvider.Default);
+        _payments.GetByWalkAsync(_walk.Id, Arg.Any<CancellationToken>()).Returns(payment);
+        await Start().HandleAsync(new StartWalkCommand(_walk.Id), CancellationToken.None);
+
+        await Finish().HandleAsync(new FinishWalkCommand(_walk.Id), CancellationToken.None);
+
+        payment.Status.ShouldBe(PaymentStatus.Captured);
+        await _gateway.Received(1).CaptureAsync(
+            new PaymentCapture("sim_hold_1", 23000m, 4600m, "walker-1", 18400m, "COP"),
+            Arg.Any<CancellationToken>());
     }
 }

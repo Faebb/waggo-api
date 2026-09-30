@@ -1,15 +1,20 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Pets;
 using Waggo.Application.Common.Interfaces.Pricing;
 using Waggo.Application.Common.Interfaces.Walks;
+using Waggo.Application.Common.Models.Payments;
 using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.UnitTests.TestDoubles;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.RequestWalk;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Pets;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Payments;
 using Waggo.Domain.Enums.Pricing;
+using Waggo.Domain.Errors.Payments;
 using Waggo.Domain.Errors.Pricing;
 using Waggo.Domain.Errors.Walks;
 
@@ -20,6 +25,8 @@ public class RequestWalkHandlerTests
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
     private readonly IPetRepository _pets = Substitute.For<IPetRepository>();
     private readonly IPricingTableProvider _pricing = Substitute.For<IPricingTableProvider>();
+    private readonly IWalkPaymentRepository _payments = Substitute.For<IWalkPaymentRepository>();
+    private readonly IPaymentGateway _gateway = PaymentMother.ApprovingGateway();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly Pet _luna = PetMother.Luna();
     private readonly Pet _max = PetMother.Max();
@@ -37,6 +44,8 @@ public class RequestWalkHandlerTests
             _walks,
             _pets,
             _pricing,
+            _payments,
+            _gateway,
             _currentUser,
             new FixedTimeProvider());
     }
@@ -107,5 +116,34 @@ public class RequestWalkHandlerTests
             CancellationToken.None);
 
         result.Errors.ShouldContain(e => e.Code == WalkErrors.InvalidPets.Code);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ValidCommand_HoldsTheTotalAndSavesTheHeldPayment()
+    {
+        WaggoResponse<WalkResponse> result = await _sut.HandleAsync(Command(), CancellationToken.None);
+
+        await _gateway.Received(1).HoldAsync(
+            new PaymentHold(result.Data.Id, "owner-1", 23000m, "COP"),
+            Arg.Any<CancellationToken>());
+        await _payments.Received(1).AddAsync(
+            Arg.Is<WalkPayment>(payment => payment.WalkId == result.Data.Id
+                && payment.Status == PaymentStatus.Held
+                && payment.GatewayReference == "sim_hold_1"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_PaymentDeclined_FailsWithoutSavingTheWalk()
+    {
+        WaggoResponse<string> declined = new();
+        declined.AddError(PaymentErrors.Declined);
+        _gateway.HoldAsync(Arg.Any<PaymentHold>(), Arg.Any<CancellationToken>()).Returns(declined);
+
+        WaggoResponse<WalkResponse> result = await _sut.HandleAsync(Command(), CancellationToken.None);
+
+        result.Errors.Single().Code.ShouldBe(PaymentErrors.Declined.Code);
+        await _walks.DidNotReceive().AddAsync(Arg.Any<Walk>(), Arg.Any<CancellationToken>());
+        await _payments.DidNotReceive().AddAsync(Arg.Any<WalkPayment>(), Arg.Any<CancellationToken>());
     }
 }

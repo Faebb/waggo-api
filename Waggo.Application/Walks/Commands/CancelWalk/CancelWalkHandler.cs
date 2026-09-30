@@ -1,14 +1,21 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
 
 namespace Waggo.Application.Walks.Commands.CancelWalk;
 
-/// <summary>RF-007: the owner cancels one of their walks before it starts.</summary>
-internal sealed class CancelWalkHandler(IWalkRepository walks, ICurrentUser currentUser, TimeProvider timeProvider)
+/// <summary>RF-007: the owner cancels one of their walks before it starts. The hold is released (RF-016).</summary>
+internal sealed class CancelWalkHandler(
+    IWalkRepository walks,
+    IWalkPaymentRepository payments,
+    IPaymentGateway gateway,
+    ICurrentUser currentUser,
+    TimeProvider timeProvider)
     : ICommandHandler<CancelWalkCommand, WalkResponse>
 {
     public async Task<WaggoResponse<WalkResponse>> HandleAsync(
@@ -24,10 +31,24 @@ internal sealed class CancelWalkHandler(IWalkRepository walks, ICurrentUser curr
             throw new NotFoundException(WalkErrors.NotFound, $"Walk {command.WalkId} not found for {currentUser.Id}");
         }
 
-        response.ConcatStacks(walk.Cancel(timeProvider.GetUtcNow()));
+        DateTimeOffset now = timeProvider.GetUtcNow();
+        response.ConcatStacks(walk.Cancel(now));
         if (!response.IsValid)
         {
             return response;
+        }
+
+        // Walks requested before payments existed have no payment.
+        WalkPayment? payment = await payments.GetByWalkAsync(walk.Id, cancellationToken);
+        if (payment is not null)
+        {
+            response.ConcatStacks(payment.Release(now));
+            if (!response.IsValid)
+            {
+                return response;
+            }
+
+            await gateway.ReleaseAsync(payment.GatewayReference, cancellationToken);
         }
 
         await walks.SaveChangesAsync(cancellationToken);
