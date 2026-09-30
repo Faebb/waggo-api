@@ -7,6 +7,7 @@ using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Pricing;
 using Waggo.Domain.Errors.Walks;
+using Waggo.Domain.Services.Walks;
 using Waggo.Domain.ValueObjects.Pricing;
 using Waggo.Domain.ValueObjects.Walks;
 
@@ -55,18 +56,24 @@ public class ListAvailableWalksHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WithLocation_ListsTheNearestFirst()
+    public async Task HandleAsync_WithLocation_AsksTheDatabaseForTheNearbyOnesAndKeepsItsOrder_RF006()
     {
-        Walk far = RequestedAt("owner-1", 4.68, -74.06, hoursAhead: 1);
         Walk near = RequestedAt("owner-2", 4.645, -74.06, hoursAhead: 5);
-        IReadOnlyList<Walk> requested = [far, near];
-        _walks.ListRequestedAsync(Arg.Any<CancellationToken>()).Returns(requested);
+        Walk far = RequestedAt("owner-1", 4.68, -74.06, hoursAhead: 1);
+        Walk mine = RequestedAt("walker-1", 4.64, -74.06, hoursAhead: 1);
+        IReadOnlyList<Walk> nearby = [near, mine, far];
+        _walks.ListRequestedNearAsync(
+                Arg.Is<GeoPoint>(point => point.Latitude == 4.6361 && point.Longitude == -74.0645),
+                WalkMatching.MaxDistanceKm,
+                Arg.Any<CancellationToken>())
+            .Returns(nearby);
 
         WaggoResponse<IReadOnlyList<AvailableWalkResponse>> result =
             await _sut.HandleAsync(new ListAvailableWalksQuery(4.6361, -74.0645), CancellationToken.None);
 
         result.Data.Select(offer => offer.Id).ShouldBe([near.Id, far.Id]);
         result.Data[0].DistanceKm!.Value.ShouldBe(1.1, 0.2);
+        await _walks.DidNotReceive().ListRequestedAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]
