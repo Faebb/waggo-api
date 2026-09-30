@@ -4,6 +4,7 @@ using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
+using Waggo.Domain.ValueObjects.Walks;
 using Waggo.Infrastructure.Persistence.Context;
 
 namespace Waggo.Infrastructure.Services.Walks;
@@ -29,6 +30,30 @@ internal sealed class WalkRepository(WaggoDbContext db) : IWalkRepository
         await db.Walks.AsNoTracking()
             .Where(walk => walk.Status == WalkStatus.Requested)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Walk>> ListRequestedNearAsync(
+        GeoPoint point,
+        double radiusKm,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(point);
+        double radiusMeters = radiusKm * 1000;
+
+        // PostGIS on the geography column: ST_DWithin uses the GiST index, ST_Distance is measured on the spheroid.
+        // xmin is a system column (not in *), but EF needs it for the concurrency token.
+        return await db.Walks
+            .FromSqlInterpolated($"""
+                WITH here AS (
+                    SELECT ST_SetSRID(ST_MakePoint({point.Longitude}, {point.Latitude}), 4326)::geography AS point
+                )
+                SELECT w.*, w.xmin
+                FROM walks.walks w, here
+                WHERE w.status = 'Requested' AND ST_DWithin(w.pickup_location, here.point, {radiusMeters})
+                ORDER BY ST_Distance(w.pickup_location, here.point)
+                """)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<Walk>> ListByWalkerAsync(string walkerId, CancellationToken cancellationToken) =>
         await db.Walks.AsNoTracking()

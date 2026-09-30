@@ -4,13 +4,15 @@ using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Services.Walks;
 using Waggo.Domain.ValueObjects.Walks;
 
 namespace Waggo.Application.Walks.Queries.ListAvailableWalks;
 
 /// <summary>
-/// RF-007: the walker sees the open requests of other users, like a driver sees ride requests. With a position they
-/// are sorted by straight-line distance; without it, by time. Matching by real distance and verification is RF-006.
+/// RF-007/RF-006: the walker sees the open requests of other users, like a driver sees ride requests. With a position
+/// the database returns only those within <see cref="WalkMatching.MaxDistanceKm"/>, nearest first; without it, all of
+/// them by time.
 /// </summary>
 internal sealed class ListAvailableWalksHandler(
     IValidator<ListAvailableWalksQuery> validator,
@@ -35,14 +37,26 @@ internal sealed class ListAvailableWalksHandler(
             ? GeoPoint.Create(latitude, longitude).Data
             : null;
 
-        IReadOnlyList<Walk> requested = await walks.ListRequestedAsync(cancellationToken);
-        IEnumerable<AvailableWalkResponse> offers = requested
-            .Where(walk => walk.OwnerId != currentUser.Id)
-            .Select(walk => AvailableWalkResponse.From(walk, here?.DistanceKmTo(walk.PickupLocation)));
+        if (here is null)
+        {
+            IReadOnlyList<Walk> all = await walks.ListRequestedAsync(cancellationToken);
+            response.Data =
+            [
+                .. all.Where(walk => walk.OwnerId != currentUser.Id)
+                    .OrderBy(walk => walk.ScheduledFor)
+                    .Select(walk => AvailableWalkResponse.From(walk, distanceKm: null)),
+            ];
+            return response;
+        }
 
-        response.Data = here is null
-            ? [.. offers.OrderBy(offer => offer.ScheduledFor)]
-            : [.. offers.OrderBy(offer => offer.DistanceKm)];
+        // Already filtered and sorted by the database; the distance is shown to the walker.
+        IReadOnlyList<Walk> nearby =
+            await walks.ListRequestedNearAsync(here, WalkMatching.MaxDistanceKm, cancellationToken);
+        response.Data =
+        [
+            .. nearby.Where(walk => walk.OwnerId != currentUser.Id)
+                .Select(walk => AvailableWalkResponse.From(walk, here.DistanceKmTo(walk.PickupLocation))),
+        ];
         return response;
     }
 }

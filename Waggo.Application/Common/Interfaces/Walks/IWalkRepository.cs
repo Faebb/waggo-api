@@ -1,4 +1,5 @@
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.ValueObjects.Walks;
 
 namespace Waggo.Application.Common.Interfaces.Walks;
 
@@ -16,6 +17,15 @@ public interface IWalkRepository
 
     /// <summary>Open requests (status <c>Requested</c>) of every owner.</summary>
     Task<IReadOnlyList<Walk>> ListRequestedAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Open requests whose pickup is within <paramref name="radiusKm"/> of <paramref name="point"/>, nearest first
+    /// (RF-006). Resolved by the database with its spatial index.
+    /// </summary>
+    Task<IReadOnlyList<Walk>> ListRequestedNearAsync(
+        GeoPoint point,
+        double radiusKm,
+        CancellationToken cancellationToken);
 
     /// <summary>Walks accepted by the walker, next one first.</summary>
     Task<IReadOnlyList<Walk>> ListByWalkerAsync(string walkerId, CancellationToken cancellationToken);
