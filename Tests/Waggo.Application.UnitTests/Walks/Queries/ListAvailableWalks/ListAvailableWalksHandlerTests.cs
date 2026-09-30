@@ -1,5 +1,6 @@
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Walks;
+using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.UnitTests.TestDoubles;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Queries.ListAvailableWalks;
@@ -22,7 +23,11 @@ public class ListAvailableWalksHandlerTests
     public ListAvailableWalksHandlerTests()
     {
         _currentUser.Id.Returns("walker-1");
-        _sut = new ListAvailableWalksHandler(new ListAvailableWalksQueryValidator(), _walks, _currentUser);
+        _sut = new ListAvailableWalksHandler(
+            new ListAvailableWalksQueryValidator(),
+            _walks,
+            WalkerMother.VerifiedRepository("walker-1"),
+            _currentUser);
     }
 
     private static Walk RequestedAt(string ownerId, double latitude, double longitude, int hoursAhead) =>

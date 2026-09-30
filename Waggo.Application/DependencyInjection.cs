@@ -14,6 +14,12 @@ using Waggo.Application.Tracking.Commands.RaiseEmergency;
 using Waggo.Application.Tracking.Commands.RecordTrack;
 using Waggo.Application.Tracking.Queries.GetRoute;
 using Waggo.Application.Tracking.Queries.ListWalkAlerts;
+using Waggo.Application.Walkers;
+using Waggo.Application.Walkers.Commands.ApproveWalker;
+using Waggo.Application.Walkers.Commands.RegisterWalker;
+using Waggo.Application.Walkers.Commands.RejectWalker;
+using Waggo.Application.Walkers.Queries.GetMyWalkerProfile;
+using Waggo.Application.Walkers.Queries.ListWalkersForReview;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.AcceptWalk;
 using Waggo.Application.Walks.Commands.CancelWalk;
@@ -62,6 +68,12 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<SendMessageCommand, WalkMessageResponse>, SendMessageHandler>();
         services.AddScoped<IQueryHandler<ListMessagesQuery, IReadOnlyList<WalkMessageResponse>>,
             ListMessagesHandler>();
+        services.AddScoped<ICommandHandler<RegisterWalkerCommand, WalkerProfileResponse>, RegisterWalkerHandler>();
+        services.AddScoped<IQueryHandler<GetMyWalkerProfileQuery, WalkerProfileResponse>, GetMyWalkerProfileHandler>();
+        services.AddScoped<IQueryHandler<ListWalkersForReviewQuery, IReadOnlyList<WalkerProfileResponse>>,
+            ListWalkersForReviewHandler>();
+        services.AddScoped<ICommandHandler<ApproveWalkerCommand, WalkerProfileResponse>, ApproveWalkerHandler>();
+        services.AddScoped<ICommandHandler<RejectWalkerCommand, WalkerProfileResponse>, RejectWalkerHandler>();
         return services;
     }
 }

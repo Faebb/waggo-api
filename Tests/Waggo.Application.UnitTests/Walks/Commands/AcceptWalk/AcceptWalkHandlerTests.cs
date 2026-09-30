@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.UnitTests.TestDoubles;
@@ -16,12 +17,13 @@ public class AcceptWalkHandlerTests
 {
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
+    private readonly IWalkerProfileRepository _walkerProfiles = WalkerMother.VerifiedRepository("walker-1");
     private readonly AcceptWalkHandler _sut;
 
     public AcceptWalkHandlerTests()
     {
         _currentUser.Id.Returns("walker-1");
-        _sut = new AcceptWalkHandler(_walks, _currentUser, new FixedTimeProvider());
+        _sut = new AcceptWalkHandler(_walks, _walkerProfiles, _currentUser, new FixedTimeProvider());
     }
 
     [Fact]

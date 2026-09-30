@@ -1,7 +1,9 @@
 using FluentValidation;
 using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
+using Waggo.Application.Walkers;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Services.Walks;
@@ -17,6 +19,7 @@ namespace Waggo.Application.Walks.Queries.ListAvailableWalks;
 internal sealed class ListAvailableWalksHandler(
     IValidator<ListAvailableWalksQuery> validator,
     IWalkRepository walks,
+    IWalkerProfileRepository walkerProfiles,
     ICurrentUser currentUser)
     : IQueryHandler<ListAvailableWalksQuery, IReadOnlyList<AvailableWalkResponse>>
 {
@@ -32,6 +35,8 @@ internal sealed class ListAvailableWalksHandler(
         {
             return response;
         }
+
+        await walkerProfiles.EnsureVerifiedAsync(currentUser.Id, cancellationToken);
 
         GeoPoint? here = query is { Latitude: { } latitude, Longitude: { } longitude }
             ? GeoPoint.Create(latitude, longitude).Data
