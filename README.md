@@ -98,3 +98,6 @@ Las tarifas y la comisión son **provisionales** y se configuran en `appsettings
 dotnet tool install --global dotnet-ef
 dotnet ef migrations add <Nombre> -p Waggo.Infrastructure -s Waggo.Api -o Persistence/Migrations
 ```
+
+## Licencia
+[MIT](LICENSE)
