@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Waggo.Application.Common.Interfaces.Pets;
 using Waggo.Application.Common.Interfaces.Pricing;
+using Waggo.Application.Common.Interfaces.Tracking;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Infrastructure.Options.Pricing;
 using Waggo.Infrastructure.Options.Security;
@@ -11,6 +12,7 @@ using Waggo.Infrastructure.Persistence.Context;
 using Waggo.Infrastructure.Services.Pets;
 using Waggo.Infrastructure.Services.Pricing;
 using Waggo.Infrastructure.Services.Security;
+using Waggo.Infrastructure.Services.Tracking;
 using Waggo.Infrastructure.Services.Walks;
 
 namespace Waggo.Infrastructure;
@@ -44,6 +46,7 @@ public static class DependencyInjection
         services.AddSingleton<IPricingTableProvider, ConfigurationPricingTableProvider>();
         services.AddScoped<IPetRepository, PetRepository>();
         services.AddScoped<IWalkRepository, WalkRepository>();
+        services.AddScoped<ITrackPointRepository, TrackPointRepository>();
 
         services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres", tags: ["ready"]);
 

@@ -121,6 +121,16 @@ Lado del paseador (rol `walker`), como un conductor que ve solicitudes:
 
 `GET /api/v1/walks/{id}` responde al dueño y al paseador asignado. Dos aceptaciones simultáneas no pueden ganar ambas: `walks` usa `xmin` de PostgreSQL como token de concurrencia optimista.
 
+## Paseo en vivo (RF-008, RF-011)
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/api/v1/walks/{id}/start` | El paseador asignado inicia el paseo (`Accepted → InProgress`) |
+| `POST` | `/api/v1/walks/{id}/track` | Lote de 1–100 posiciones `{ latitude, longitude, recordedAt }` mientras está en curso |
+| `GET` | `/api/v1/walks/{id}/track` | Ruta ordenada con `distanceKm` y `elapsedMinutes` (dueño o paseador) |
+| `POST` | `/api/v1/walks/{id}/finish` | El paseador termina el paseo (`InProgress → Completed`) |
+
+Las posiciones se guardan en `tracking.track_points` (GiST en la posición, BRIN en el tiempo). Por ahora la app consulta la ruta cada pocos segundos; SignalR (RNF-007) llegará en otro slice.
+
 Estados: `Requested → Accepted → InProgress → Completed`, o `Cancelled`. El punto de recogida se guarda como `geography(Point, 4326)` de PostGIS con índice GiST, para el matching por cercanía (RF-006).
 
 ## Base de datos y datos sensibles

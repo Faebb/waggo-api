@@ -7,7 +7,9 @@ using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.AcceptWalk;
 using Waggo.Application.Walks.Commands.CancelWalk;
+using Waggo.Application.Walks.Commands.FinishWalk;
 using Waggo.Application.Walks.Commands.RequestWalk;
+using Waggo.Application.Walks.Commands.StartWalk;
 using Waggo.Application.Walks.Queries.GetWalk;
 using Waggo.Application.Walks.Queries.ListAssignedWalks;
 using Waggo.Application.Walks.Queries.ListAvailableWalks;
@@ -62,6 +64,15 @@ internal static class WalksEndpoints
 
         walker.MapPost("/{id:guid}/accept", AcceptWalkAsync)
             .WithName("AcceptWalk")
+            .Produces<WaggoApiResponse<WalkResponse>>();
+
+        // RF-008: the assigned walker starts the walk when picking the dogs up and finishes it when bringing them back.
+        walker.MapPost("/{id:guid}/start", StartWalkAsync)
+            .WithName("StartWalk")
+            .Produces<WaggoApiResponse<WalkResponse>>();
+
+        walker.MapPost("/{id:guid}/finish", FinishWalkAsync)
+            .WithName("FinishWalk")
             .Produces<WaggoApiResponse<WalkResponse>>();
 
         return routes;
@@ -143,6 +154,28 @@ internal static class WalksEndpoints
     {
         WaggoResponse<WalkResponse> response = await handler.HandleAsync(new AcceptWalkCommand(id), cancellationToken);
         response.WriteLogs(logger, "AcceptWalk");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> StartWalkAsync(
+        Guid id,
+        ICommandHandler<StartWalkCommand, WalkResponse> handler,
+        ILogger<StartWalkCommand> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<WalkResponse> response = await handler.HandleAsync(new StartWalkCommand(id), cancellationToken);
+        response.WriteLogs(logger, "StartWalk");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> FinishWalkAsync(
+        Guid id,
+        ICommandHandler<FinishWalkCommand, WalkResponse> handler,
+        ILogger<FinishWalkCommand> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<WalkResponse> response = await handler.HandleAsync(new FinishWalkCommand(id), cancellationToken);
+        response.WriteLogs(logger, "FinishWalk");
         return response.ToApiResult();
     }
 }
