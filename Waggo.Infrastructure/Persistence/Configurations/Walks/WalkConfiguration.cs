@@ -42,5 +42,10 @@ internal sealed class WalkConfiguration : IEntityTypeConfiguration<Walk>
         builder.Property(walk => walk.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.HasIndex(walk => walk.Status);
         builder.Property(walk => walk.WalkerId).HasMaxLength(128);
+        builder.HasIndex(walk => walk.WalkerId);
+
+        // Optimistic concurrency with PostgreSQL's xmin system column: if two walkers accept the same walk at once,
+        // the second save fails instead of silently overwriting the first walker.
+        builder.Property<uint>("Version").IsRowVersion();
     }
 }

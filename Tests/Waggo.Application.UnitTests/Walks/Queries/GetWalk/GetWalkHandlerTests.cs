@@ -33,6 +33,18 @@ public class GetWalkHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_WalkAssignedToTheCurrentWalker_ReturnsIt()
+    {
+        Walk walk = WalkMother.Requested(ownerId: "owner-2");
+        walk.Accept("owner-1", DateTimeOffset.UtcNow); // the current user is the walker here
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        WaggoResponse<WalkResponse> result = await _sut.HandleAsync(new GetWalkQuery(walk.Id), CancellationToken.None);
+
+        result.Data.WalkerId.ShouldBe("owner-1");
+    }
+
+    [Fact]
     public async Task HandleAsync_WalkOfAnotherOwner_ThrowsNotFound()
     {
         Walk foreign = WalkMother.Requested(ownerId: "owner-2");

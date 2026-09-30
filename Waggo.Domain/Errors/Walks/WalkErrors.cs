@@ -31,6 +31,16 @@ public static class WalkErrors
         "Este paseo ya no se puede cancelar.",
         ErrorType.BusinessRule);
 
+    public static readonly Error NotAvailable = new(
+        "Walks.NotAvailable",
+        "Otro paseador ya tomó este paseo. Busca otra solicitud.",
+        ErrorType.Conflict);
+
+    public static readonly Error OwnWalk = new(
+        "Walks.OwnWalk",
+        "No puedes aceptar un paseo que pediste tú.",
+        ErrorType.BusinessRule);
+
     public static readonly Error NotFound = new(
         "Walks.NotFound",
         "No encontramos ese paseo entre los tuyos.",
