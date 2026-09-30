@@ -1,10 +1,13 @@
 using FluentValidation;
 using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Pets;
 using Waggo.Application.Common.Interfaces.Pricing;
 using Waggo.Application.Common.Interfaces.Walks;
+using Waggo.Application.Common.Models.Payments;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Pets;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Errors.Walks;
@@ -16,13 +19,16 @@ namespace Waggo.Application.Walks.Commands.RequestWalk;
 
 /// <summary>
 /// RF-007: the current owner requests a walk for some of their dogs. The fare is quoted with the current rates
-/// (RF-019) and frozen in the walk, which starts looking for a walker.
+/// (RF-019) and frozen in the walk, which starts looking for a walker. The total is held on the owner's payment
+/// method first (RF-016): if the gateway declines, no walk is created.
 /// </summary>
 internal sealed class RequestWalkHandler(
     IValidator<RequestWalkCommand> validator,
     IWalkRepository walks,
     IPetRepository pets,
     IPricingTableProvider pricingTableProvider,
+    IWalkPaymentRepository payments,
+    IPaymentGateway gateway,
     ICurrentUser currentUser,
     TimeProvider timeProvider)
     : ICommandHandler<RequestWalkCommand, WalkResponse>
@@ -87,7 +93,17 @@ internal sealed class RequestWalkHandler(
             return response;
         }
 
+        WaggoResponse<string> hold = await gateway.HoldAsync(
+            new PaymentHold(walk.Data.Id, currentUser.Id, walk.Data.Total, walk.Data.Currency),
+            cancellationToken);
+        response.ConcatStacks(hold);
+        if (!response.IsValid)
+        {
+            return response;
+        }
+
         await walks.AddAsync(walk.Data, cancellationToken);
+        await payments.AddAsync(WalkPayment.Hold(walk.Data, hold.Data, timeProvider.GetUtcNow()), cancellationToken);
         response.Data = WalkResponse.From(walk.Data);
         return response;
     }
