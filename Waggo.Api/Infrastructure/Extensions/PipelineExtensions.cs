@@ -4,6 +4,7 @@ using Waggo.Api.Endpoints.Messaging;
 using Waggo.Api.Endpoints.Pets;
 using Waggo.Api.Endpoints.Pricing;
 using Waggo.Api.Endpoints.Tracking;
+using Waggo.Api.Endpoints.Walkers;
 using Waggo.Api.Endpoints.Walks;
 using Waggo.Api.Infrastructure.Errors;
 using Waggo.Api.Infrastructure.Middleware;
@@ -65,6 +66,7 @@ public static class PipelineExtensions
         v1.MapWalksEndpoints();
         v1.MapTrackingEndpoints();
         v1.MapMessagingEndpoints();
+        v1.MapWalkersEndpoints();
 
         return app;
     }

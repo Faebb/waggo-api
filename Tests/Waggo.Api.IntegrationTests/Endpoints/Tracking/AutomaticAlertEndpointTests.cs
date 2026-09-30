@@ -53,7 +53,7 @@ public class AutomaticAlertEndpointTests(WaggoApiFactory factory)
     private async Task<(HttpClient Owner, HttpClient Walker, WalkResponse Walk)> StartedWalkAsync()
     {
         HttpClient owner = WalkScenario.Client(factory, "owner");
-        HttpClient walker = WalkScenario.Client(factory, "walker");
+        HttpClient walker = await WalkScenario.VerifiedWalkerAsync(factory);
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
         await WalkScenario.AcceptAsync(walker, walk.Id, start: true);
         return (owner, walker, walk);

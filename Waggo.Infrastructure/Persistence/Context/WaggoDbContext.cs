@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Waggo.Domain.Entities.Messaging;
 using Waggo.Domain.Entities.Pets;
 using Waggo.Domain.Entities.Tracking;
+using Waggo.Domain.Entities.Walkers;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Infrastructure.Persistence.Configurations.Pets;
+using Waggo.Infrastructure.Persistence.Configurations.Walkers;
 using Waggo.Infrastructure.Services.Security;
 
 namespace Waggo.Infrastructure.Persistence.Context;
@@ -21,6 +23,8 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
 
     public DbSet<WalkMessage> WalkMessages => Set<WalkMessage>();
 
+    public DbSet<WalkerProfile> WalkerProfiles => Set<WalkerProfile>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -30,6 +34,7 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
         // so they are applied explicitly; the rest are picked up from the assembly.
         modelBuilder.HasPostgresExtension("postgis");
         modelBuilder.ApplyConfiguration(new PetConfiguration(encryptor));
+        modelBuilder.ApplyConfiguration(new WalkerProfileConfiguration(encryptor));
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(WaggoDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
     }

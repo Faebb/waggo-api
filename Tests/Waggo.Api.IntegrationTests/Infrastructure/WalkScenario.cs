@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Waggo.Api.Infrastructure.Responses;
 using Waggo.Application.Pets;
+using Waggo.Application.Walkers;
 using Waggo.Application.Walks;
 
 namespace Waggo.Api.IntegrationTests.Infrastructure;
@@ -19,6 +20,44 @@ internal static class WalkScenario
         client.DefaultRequestHeaders.Add("X-Dev-Roles", roles);
         return client;
     }
+
+    /// <summary>
+    /// A walker who registered and was approved by an admin (RF-002, RF-003): only they see and accept requests.
+    /// </summary>
+    public static async Task<HttpClient> VerifiedWalkerAsync(
+        WaggoApiFactory factory,
+        string? userId = null,
+        string roles = "walker")
+    {
+        HttpClient walker = Client(factory, roles);
+        if (userId is not null)
+        {
+            walker.DefaultRequestHeaders.Remove("X-Dev-User-Id");
+            walker.DefaultRequestHeaders.Add("X-Dev-User-Id", userId);
+        }
+
+        HttpResponseMessage registered =
+            await walker.PostAsJsonAsync(new Uri("/api/v1/walkers/me", UriKind.Relative), WalkerProfileRequest());
+        registered.StatusCode.ShouldBe(HttpStatusCode.OK);
+        Guid profileId = (await registered.Content.ReadFromJsonAsync<WaggoApiResponse<WalkerProfileResponse>>())!
+            .Data!.Id;
+
+        using HttpClient admin = Client(factory, "admin");
+        HttpResponseMessage approved = await admin.PostAsync(
+            new Uri($"/api/v1/admin/walkers/{profileId}/approve", UriKind.Relative),
+            content: null);
+        approved.StatusCode.ShouldBe(HttpStatusCode.OK);
+        return walker;
+    }
+
+    public static object WalkerProfileRequest(string phone = "3001234567") => new
+    {
+        fullName = "Andrés Gómez",
+        documentType = "CC",
+        documentNumber = "1020304050",
+        phone,
+        experience = "3 años con perros grandes",
+    };
 
     public static Uri WalkUri(Guid walkId, string action) =>
         new($"/api/v1/walks/{walkId}/{action}", UriKind.Relative);

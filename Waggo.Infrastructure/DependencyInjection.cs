@@ -6,6 +6,7 @@ using Waggo.Application.Common.Interfaces.Messaging;
 using Waggo.Application.Common.Interfaces.Pets;
 using Waggo.Application.Common.Interfaces.Pricing;
 using Waggo.Application.Common.Interfaces.Tracking;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Infrastructure.Options.Pricing;
 using Waggo.Infrastructure.Options.Security;
@@ -15,6 +16,7 @@ using Waggo.Infrastructure.Services.Pets;
 using Waggo.Infrastructure.Services.Pricing;
 using Waggo.Infrastructure.Services.Security;
 using Waggo.Infrastructure.Services.Tracking;
+using Waggo.Infrastructure.Services.Walkers;
 using Waggo.Infrastructure.Services.Walks;
 
 namespace Waggo.Infrastructure;
@@ -51,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ITrackPointRepository, TrackPointRepository>();
         services.AddScoped<IWalkAlertRepository, WalkAlertRepository>();
         services.AddScoped<IWalkMessageRepository, WalkMessageRepository>();
+        services.AddScoped<IWalkerProfileRepository, WalkerProfileRepository>();
 
         services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres", tags: ["ready"]);
 
