@@ -10,6 +10,7 @@ using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Common;
+using Waggo.Domain.Enums.Tracking;
 using Waggo.Domain.Errors.Tracking;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
@@ -21,6 +22,7 @@ public class TrackingHandlersTests
 {
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
     private readonly ITrackPointRepository _points = Substitute.For<ITrackPointRepository>();
+    private readonly IWalkAlertRepository _alerts = Substitute.For<IWalkAlertRepository>();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly Walk _walk = WalkMother.Requested(ownerId: "owner-1");
 
@@ -33,7 +35,7 @@ public class TrackingHandlersTests
     private RecordTrackHandler Record(string userId)
     {
         _currentUser.Id.Returns(userId);
-        return new RecordTrackHandler(new RecordTrackCommandValidator(), _walks, _points, _currentUser);
+        return new RecordTrackHandler(new RecordTrackCommandValidator(), _walks, _points, _alerts, _currentUser);
     }
 
     private GetRouteHandler Route(string userId)
@@ -57,6 +59,28 @@ public class TrackingHandlersTests
         await _points.Received(1).AddRangeAsync(
             Arg.Is<IReadOnlyList<TrackPoint>>(points => points.Count == 3 && points.All(p => p.WalkId == _walk.Id)),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Record_LeavingTheZone_SavesAGeofenceAlert_RF009()
+    {
+        _walk.Start(FixedTimeProvider.Default);
+
+        await Record("walker-1").HandleAsync(Batch(1, latitude: 4.6631), CancellationToken.None);
+
+        await _alerts.Received(1).AddAsync(
+            Arg.Is<WalkAlert>(alert => alert.Kind == AlertKind.Geofence && alert.WalkId == _walk.Id),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Record_NormalPositions_SavesNoAlert()
+    {
+        _walk.Start(FixedTimeProvider.Default);
+
+        await Record("walker-1").HandleAsync(Batch(2), CancellationToken.None);
+
+        await _alerts.DidNotReceive().AddAsync(Arg.Any<WalkAlert>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

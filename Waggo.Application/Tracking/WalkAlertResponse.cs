@@ -6,7 +6,7 @@ namespace Waggo.Application.Tracking;
 public sealed record WalkAlertResponse(
     Guid Id,
     string Kind,
-    string RaisedBy,
+    string? RaisedBy,
     string? Message,
     double? Latitude,
     double? Longitude,
@@ -18,7 +18,7 @@ public sealed record WalkAlertResponse(
         return new WalkAlertResponse(
             alert.Id,
             alert.Kind.ToString(),
-            alert.RaisedBy.ToString(),
+            alert.RaisedBy?.ToString(),
             alert.Message,
             alert.Location?.Latitude,
             alert.Location?.Longitude,
