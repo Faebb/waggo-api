@@ -136,7 +136,7 @@ public class TrackingEndpointTests(WaggoApiFactory factory)
     private async Task<(HttpClient Owner, HttpClient Walker, WalkResponse Walk)> AcceptedWalkAsync()
     {
         HttpClient owner = Client("owner");
-        HttpClient walker = Client("walker");
+        HttpClient walker = await WalkScenario.VerifiedWalkerAsync(factory);
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
         await WalkScenario.AcceptAsync(walker, walk.Id);
         return (owner, walker, walk);

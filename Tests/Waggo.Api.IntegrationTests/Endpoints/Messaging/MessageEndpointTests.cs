@@ -15,7 +15,7 @@ public class MessageEndpointTests(WaggoApiFactory factory)
     public async Task OwnerAndWalker_ChatInOrder_AndCanAskOnlyForNewMessages()
     {
         using HttpClient owner = WalkScenario.Client(factory, "owner");
-        using HttpClient walker = WalkScenario.Client(factory, "walker");
+        using HttpClient walker = await WalkScenario.VerifiedWalkerAsync(factory);
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
         await WalkScenario.AcceptAsync(walker, walk.Id);
 
@@ -36,7 +36,7 @@ public class MessageEndpointTests(WaggoApiFactory factory)
     public async Task Stranger_CannotReadOrWrite()
     {
         using HttpClient owner = WalkScenario.Client(factory, "owner");
-        using HttpClient walker = WalkScenario.Client(factory, "walker");
+        using HttpClient walker = await WalkScenario.VerifiedWalkerAsync(factory);
         using HttpClient stranger = WalkScenario.Client(factory, "owner,walker");
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
         await WalkScenario.AcceptAsync(walker, walk.Id);
@@ -52,7 +52,7 @@ public class MessageEndpointTests(WaggoApiFactory factory)
     public async Task FinishedWalk_ChatIsReadOnly()
     {
         using HttpClient owner = WalkScenario.Client(factory, "owner");
-        using HttpClient walker = WalkScenario.Client(factory, "walker");
+        using HttpClient walker = await WalkScenario.VerifiedWalkerAsync(factory);
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
         await WalkScenario.AcceptAsync(walker, walk.Id, start: true);
         await owner.PostAsJsonAsync(Messages(walk.Id), new { text = "Gracias" });
@@ -70,7 +70,7 @@ public class MessageEndpointTests(WaggoApiFactory factory)
     public async Task EmptyText_Returns400()
     {
         using HttpClient owner = WalkScenario.Client(factory, "owner");
-        using HttpClient walker = WalkScenario.Client(factory, "walker");
+        using HttpClient walker = await WalkScenario.VerifiedWalkerAsync(factory);
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
         await WalkScenario.AcceptAsync(walker, walk.Id);
 

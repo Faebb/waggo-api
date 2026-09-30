@@ -18,7 +18,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     public async Task Available_ShowsOpenRequestsWithThePayout()
     {
         using HttpClient owner = Client("owner");
-        using HttpClient walker = Client("walker");
+        using HttpClient walker = await Walker();
         WalkResponse walk = await RequestWalkAsync(owner, 4.6361, -74.0645);
 
         AvailableWalkResponse offer = (await AvailableAsync(walker)).Single(w => w.Id == walk.Id);
@@ -33,7 +33,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     public async Task Available_WithLocation_ListsTheNearestFirst()
     {
         using HttpClient owner = Client("owner");
-        using HttpClient walker = Client("walker");
+        using HttpClient walker = await Walker();
         WalkResponse far = await RequestWalkAsync(owner, 4.6800, -74.0600);  // ~5 km north
         WalkResponse near = await RequestWalkAsync(owner, 4.6450, -74.0600); // ~1 km
 
@@ -49,7 +49,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     public async Task Available_WithLocation_LeavesOutRequestsFartherThan5Km_RF006()
     {
         using HttpClient owner = Client("owner");
-        using HttpClient walker = Client("walker");
+        using HttpClient walker = await Walker();
         WalkResponse justOutside = await RequestWalkAsync(owner, 4.6830, -74.0645); // ~5.2 km
         WalkResponse far = await RequestWalkAsync(owner, 4.7081, -74.0645);        // ~8 km
         WalkResponse near = await RequestWalkAsync(owner, 4.6450, -74.0645);       // ~1 km
@@ -70,7 +70,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     {
         string ownerId = NewId("owner");
         using HttpClient owner = Client("owner", ownerId);
-        using HttpClient ownerAsWalker = Client("owner,walker", ownerId);
+        using HttpClient ownerAsWalker = await Walker(ownerId, "owner,walker");
         WalkResponse cancelled = await RequestWalkAsync(owner, 4.6361, -74.0645);
         await owner.PostAsync(new Uri($"/api/v1/walks/{cancelled.Id}/cancel", UriKind.Relative), content: null);
         WalkResponse own = await RequestWalkAsync(owner, 4.6361, -74.0645);
@@ -86,7 +86,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     {
         using HttpClient owner = Client("owner");
         string walkerId = NewId("walker");
-        using HttpClient walker = Client("walker", walkerId);
+        using HttpClient walker = await Walker(walkerId);
         WalkResponse walk = await RequestWalkAsync(owner, 4.6361, -74.0645);
 
         HttpResponseMessage response = await walker.PostAsync(AcceptUri(walk.Id), content: null);
@@ -104,8 +104,8 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     public async Task Accept_AlreadyTaken_Returns409NotAvailable()
     {
         using HttpClient owner = Client("owner");
-        using HttpClient first = Client("walker");
-        using HttpClient second = Client("walker");
+        using HttpClient first = await Walker();
+        using HttpClient second = await Walker();
         WalkResponse walk = await RequestWalkAsync(owner, 4.6361, -74.0645);
         await first.PostAsync(AcceptUri(walk.Id), content: null);
 
@@ -120,7 +120,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     {
         string ownerId = NewId("owner");
         using HttpClient owner = Client("owner", ownerId);
-        using HttpClient ownerAsWalker = Client("owner,walker", ownerId);
+        using HttpClient ownerAsWalker = await Walker(ownerId, "owner,walker");
         WalkResponse walk = await RequestWalkAsync(owner, 4.6361, -74.0645);
 
         HttpResponseMessage response = await ownerAsWalker.PostAsync(AcceptUri(walk.Id), content: null);
@@ -132,7 +132,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     [Fact]
     public async Task Accept_UnknownWalk_Returns404()
     {
-        using HttpClient walker = Client("walker");
+        using HttpClient walker = await Walker();
 
         HttpResponseMessage response = await walker.PostAsync(AcceptUri(Guid.NewGuid()), content: null);
 
@@ -144,8 +144,8 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     public async Task Assigned_ListsTheWalksTheWalkerAccepted_AndTheWalkerSeesTheDetail()
     {
         using HttpClient owner = Client("owner");
-        using HttpClient walker = Client("walker");
-        using HttpClient otherWalker = Client("walker");
+        using HttpClient walker = await Walker();
+        using HttpClient otherWalker = await Walker();
         WalkResponse walk = await RequestWalkAsync(owner, 4.6361, -74.0645);
         await walker.PostAsync(AcceptUri(walk.Id), content: null);
 
@@ -172,7 +172,7 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     [Fact]
     public async Task Available_InvalidLocation_Returns400()
     {
-        using HttpClient walker = Client("walker");
+        using HttpClient walker = await Walker();
 
         HttpResponseMessage response = await walker.GetAsync(
             new Uri("/api/v1/walks/available?latitude=95&longitude=0", UriKind.Relative));
@@ -184,6 +184,10 @@ public class WalkerEndpointTests(WaggoApiFactory factory)
     private static string NewId(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
 
     /// <summary>A client signed in as a new user with the given roles (comma separated).</summary>
+    /// <summary>A verified walker (RF-003): only they see and accept requests.</summary>
+    private Task<HttpClient> Walker(string? userId = null, string roles = "walker") =>
+        WalkScenario.VerifiedWalkerAsync(factory, userId, roles);
+
     private HttpClient Client(string roles, string? userId = null)
     {
         HttpClient client = factory.CreateClient();
