@@ -14,5 +14,15 @@ public interface IWalkRepository
     /// <summary>Walks of the owner, newest request first.</summary>
     Task<IReadOnlyList<Walk>> ListByOwnerAsync(string ownerId, CancellationToken cancellationToken);
 
+    /// <summary>Open requests (status <c>Requested</c>) of every owner.</summary>
+    Task<IReadOnlyList<Walk>> ListRequestedAsync(CancellationToken cancellationToken);
+
+    /// <summary>Walks accepted by the walker, next one first.</summary>
+    Task<IReadOnlyList<Walk>> ListByWalkerAsync(string walkerId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Saves the changes. If another request changed the same walk in the meantime (two walkers accepting at once),
+    /// it throws a <c>ConflictException</c> with <c>Walks.NotAvailable</c>.
+    /// </summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

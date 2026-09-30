@@ -112,6 +112,15 @@ Como pedir un Uber: el dueño elige de 1 a 3 de sus perros, tipo, duración, pun
 | `GET` | `/api/v1/walks/{id}` | Detalle (la app lo consulta para saber cuándo lo acepta un paseador) |
 | `POST` | `/api/v1/walks/{id}/cancel` | Cancela un paseo `Requested` o `Accepted`; si no, `422 Walks.CannotCancel` |
 
+Lado del paseador (rol `walker`), como un conductor que ve solicitudes:
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/v1/walks/available?latitude=&longitude=` | Solicitudes abiertas de otros usuarios con lo que gana el paseador; con ubicación, las más cercanas primero y `distanceKm` |
+| `POST` | `/api/v1/walks/{id}/accept` | Acepta; el primero gana. `409 Walks.NotAvailable` si ya la tomó otro, `422 Walks.OwnWalk` si es su propio paseo |
+| `GET` | `/api/v1/walks/assigned` | Paseos que aceptó |
+
+`GET /api/v1/walks/{id}` responde al dueño y al paseador asignado. Dos aceptaciones simultáneas no pueden ganar ambas: `walks` usa `xmin` de PostgreSQL como token de concurrencia optimista.
+
 Estados: `Requested → Accepted → InProgress → Completed`, o `Cancelled`. El punto de recogida se guarda como `geography(Point, 4326)` de PostGIS con índice GiST, para el matching por cercanía (RF-006).
 
 ## Base de datos y datos sensibles

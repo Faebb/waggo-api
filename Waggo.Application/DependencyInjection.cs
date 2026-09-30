@@ -7,9 +7,12 @@ using Waggo.Application.Pets.Queries.GetPet;
 using Waggo.Application.Pets.Queries.ListMyPets;
 using Waggo.Application.Pricing.Queries.QuoteFare;
 using Waggo.Application.Walks;
+using Waggo.Application.Walks.Commands.AcceptWalk;
 using Waggo.Application.Walks.Commands.CancelWalk;
 using Waggo.Application.Walks.Commands.RequestWalk;
 using Waggo.Application.Walks.Queries.GetWalk;
+using Waggo.Application.Walks.Queries.ListAssignedWalks;
+using Waggo.Application.Walks.Queries.ListAvailableWalks;
 using Waggo.Application.Walks.Queries.ListMyWalks;
 
 namespace Waggo.Application;
@@ -33,6 +36,11 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CancelWalkCommand, WalkResponse>, CancelWalkHandler>();
         services.AddScoped<IQueryHandler<ListMyWalksQuery, IReadOnlyList<WalkResponse>>, ListMyWalksHandler>();
         services.AddScoped<IQueryHandler<GetWalkQuery, WalkResponse>, GetWalkHandler>();
+        services.AddScoped<ICommandHandler<AcceptWalkCommand, WalkResponse>, AcceptWalkHandler>();
+        services.AddScoped<IQueryHandler<ListAvailableWalksQuery, IReadOnlyList<AvailableWalkResponse>>,
+            ListAvailableWalksHandler>();
+        services.AddScoped<IQueryHandler<ListAssignedWalksQuery, IReadOnlyList<WalkResponse>>,
+            ListAssignedWalksHandler>();
         return services;
     }
 }

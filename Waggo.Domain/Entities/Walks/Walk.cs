@@ -63,6 +63,8 @@ public sealed class Walk
 
     public DateTimeOffset RequestedAt { get; private set; }
 
+    public DateTimeOffset? AcceptedAt { get; private set; }
+
     public DateTimeOffset? CancelledAt { get; private set; }
 
     /// <summary>
@@ -134,6 +136,31 @@ public sealed class Walk
             Status = WalkStatus.Requested,
             RequestedAt = now,
         };
+        return response;
+    }
+
+    /// <summary>A walker takes the request, like a driver accepting a ride. The first one wins.</summary>
+    public WaggoResponse<Walk> Accept(string walkerId, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(walkerId);
+        WaggoResponse<Walk> response = new();
+
+        if (walkerId == OwnerId)
+        {
+            response.AddError(WalkErrors.OwnWalk);
+            return response;
+        }
+
+        if (Status != WalkStatus.Requested)
+        {
+            response.AddError(WalkErrors.NotAvailable);
+            return response;
+        }
+
+        Status = WalkStatus.Accepted;
+        WalkerId = walkerId;
+        AcceptedAt = now;
+        response.Data = this;
         return response;
     }
 

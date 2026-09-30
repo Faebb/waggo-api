@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Walks;
+using Waggo.Domain.Errors.Walks;
+using Waggo.Domain.Exceptions;
 using Waggo.Infrastructure.Persistence.Context;
 
 namespace Waggo.Infrastructure.Services.Walks;
@@ -22,5 +25,27 @@ internal sealed class WalkRepository(WaggoDbContext db) : IWalkRepository
             .OrderByDescending(walk => walk.RequestedAt)
             .ToListAsync(cancellationToken);
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+    public async Task<IReadOnlyList<Walk>> ListRequestedAsync(CancellationToken cancellationToken) =>
+        await db.Walks.AsNoTracking()
+            .Where(walk => walk.Status == WalkStatus.Requested)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Walk>> ListByWalkerAsync(string walkerId, CancellationToken cancellationToken) =>
+        await db.Walks.AsNoTracking()
+            .Where(walk => walk.WalkerId == walkerId)
+            .OrderBy(walk => walk.ScheduledFor)
+            .ToListAsync(cancellationToken);
+
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            // Someone changed the walk after we read it (e.g. another walker accepted it first).
+            throw new ConflictException(WalkErrors.NotAvailable, "The walk changed while saving it", exception);
+        }
+    }
 }
