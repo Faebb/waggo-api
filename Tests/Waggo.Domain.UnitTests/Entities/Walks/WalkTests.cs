@@ -143,6 +143,17 @@ public class WalkTests
         Request().Data.Accept("owner-1", s_now).Errors.Single().Code.ShouldBe(WalkErrors.OwnWalk.Code);
 
     [Fact]
+    public void PartyOf_TellsTheOwnerTheWalkerOrNobody()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+
+        walk.PartyOf("owner-1").ShouldBe(WalkParty.Owner);
+        walk.PartyOf("walker-1").ShouldBe(WalkParty.Walker);
+        walk.PartyOf("someone-else").ShouldBeNull();
+    }
+
+    [Fact]
     public void Start_AcceptedWalk_MovesToInProgress()
     {
         Walk walk = Request().Data;
