@@ -114,6 +114,45 @@ public class WalkTests
     }
 
     [Fact]
+    public void Accept_RequestedWalk_AssignsTheWalker()
+    {
+        Walk walk = Request().Data;
+
+        WaggoResponse<Walk> result = walk.Accept("walker-1", s_now.AddMinutes(2));
+
+        result.IsValid.ShouldBeTrue();
+        walk.Status.ShouldBe(WalkStatus.Accepted);
+        walk.WalkerId.ShouldBe("walker-1");
+        walk.AcceptedAt.ShouldBe(s_now.AddMinutes(2));
+    }
+
+    [Fact]
+    public void Accept_AlreadyAccepted_FailsWithNotAvailable()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+
+        WaggoResponse<Walk> result = walk.Accept("walker-2", s_now);
+
+        result.Errors.Single().Code.ShouldBe(WalkErrors.NotAvailable.Code);
+        walk.WalkerId.ShouldBe("walker-1");
+    }
+
+    [Fact]
+    public void Accept_ByTheOwner_FailsWithOwnWalk() =>
+        Request().Data.Accept("owner-1", s_now).Errors.Single().Code.ShouldBe(WalkErrors.OwnWalk.Code);
+
+    [Fact]
+    public void Cancel_AcceptedWalk_MovesToCancelled()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+
+        walk.Cancel(s_now).IsValid.ShouldBeTrue();
+        walk.Status.ShouldBe(WalkStatus.Cancelled);
+    }
+
+    [Fact]
     public void Cancel_AlreadyCancelledWalk_FailsWithCannotCancel()
     {
         Walk walk = Request().Data;

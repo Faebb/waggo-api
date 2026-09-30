@@ -17,6 +17,23 @@ public class GeoPointTests
         point.Longitude.ShouldBe(longitude);
     }
 
+    [Fact]
+    public void DistanceKmTo_TwoPointsInBogota_IsTheStraightLineDistance()
+    {
+        GeoPoint parqueNacional = GeoPoint.Create(4.6250, -74.0650).Data;
+        GeoPoint parque93 = GeoPoint.Create(4.6765, -74.0480).Data;
+
+        parqueNacional.DistanceKmTo(parque93).ShouldBe(6.0, 0.2);
+    }
+
+    [Fact]
+    public void DistanceKmTo_SamePoint_IsZero()
+    {
+        GeoPoint point = GeoPoint.Create(4.6361, -74.0645).Data;
+
+        point.DistanceKmTo(point).ShouldBe(0, 0.000001);
+    }
+
     [Theory]
     [InlineData(95, -74)]
     [InlineData(-90.1, 0)]
