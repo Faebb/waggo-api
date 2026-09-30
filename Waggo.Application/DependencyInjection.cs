@@ -1,6 +1,9 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Messaging;
+using Waggo.Application.Messaging.Commands.SendMessage;
+using Waggo.Application.Messaging.Queries.ListMessages;
 using Waggo.Application.Pets;
 using Waggo.Application.Pets.Commands.RegisterPet;
 using Waggo.Application.Pets.Queries.GetPet;
@@ -56,6 +59,9 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RaiseEmergencyCommand, WalkAlertResponse>, RaiseEmergencyHandler>();
         services.AddScoped<IQueryHandler<ListWalkAlertsQuery, IReadOnlyList<WalkAlertResponse>>,
             ListWalkAlertsHandler>();
+        services.AddScoped<ICommandHandler<SendMessageCommand, WalkMessageResponse>, SendMessageHandler>();
+        services.AddScoped<IQueryHandler<ListMessagesQuery, IReadOnlyList<WalkMessageResponse>>,
+            ListMessagesHandler>();
         return services;
     }
 }
