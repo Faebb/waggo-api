@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Waggo.Api.Endpoints.Pets;
 using Waggo.Api.Endpoints.Pricing;
+using Waggo.Api.Endpoints.Walks;
 using Waggo.Api.Infrastructure.Errors;
 using Waggo.Api.Infrastructure.Middleware;
 using Waggo.Infrastructure;
@@ -59,6 +60,7 @@ public static class PipelineExtensions
         RouteGroupBuilder v1 = app.MapGroup("/api/v1");
         v1.MapPricingEndpoints();
         v1.MapPetsEndpoints();
+        v1.MapWalksEndpoints();
 
         return app;
     }

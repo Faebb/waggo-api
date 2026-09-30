@@ -103,8 +103,19 @@ Endpoints del dueño (rol `owner`), siempre limitados a sus propios perros:
 | `GET` | `/api/v1/pets` | Lista mis perros ordenados por nombre (máximo 10) |
 | `GET` | `/api/v1/pets/{id}` | Detalle de uno de mis perros; `404 Pets.NotFound` si no existe o es de otro dueño |
 
+## Paseos (RF-007, lado del dueño)
+Como pedir un Uber: el dueño elige de 1 a 3 de sus perros, tipo, duración, punto de recogida y hora (ahora o hasta 14 días), y el precio queda congelado con la tarifa vigente.
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/api/v1/walks` | Pide un paseo: `petIds`, `walkType`, `durationMinutes`, `pickupAddress`, `latitude`, `longitude` y opcionales `scheduledFor` (vacío = ahora) y `notes` |
+| `GET` | `/api/v1/walks` | Mis paseos, el más reciente primero |
+| `GET` | `/api/v1/walks/{id}` | Detalle (la app lo consulta para saber cuándo lo acepta un paseador) |
+| `POST` | `/api/v1/walks/{id}/cancel` | Cancela un paseo `Requested` o `Accepted`; si no, `422 Walks.CannotCancel` |
+
+Estados: `Requested → Accepted → InProgress → Completed`, o `Cancelled`. El punto de recogida se guarda como `geography(Point, 4326)` de PostGIS con índice GiST, para el matching por cercanía (RF-006).
+
 ## Base de datos y datos sensibles
-- EF Core + Npgsql con nombres `snake_case` y un schema por módulo (`pets`, …).
+- EF Core + Npgsql con nombres `snake_case` y un schema por módulo (`pets`, `walks`, …). Las posiciones usan PostGIS a través de NetTopologySuite; el dominio solo conoce su `GeoPoint`.
 - Las columnas sensibles (hoy `pets.medical_notes`) se guardan **cifradas con AES-256-GCM** (RNF-003). La llave es `Encryption:Key`: 32 bytes aleatorios en base64 (`openssl rand -base64 32`). En Development viene en `appsettings.Development.json`; en cualquier otro ambiente se configura con un secreto o con la variable `Encryption__Key`, y la API no arranca sin ella.
 
 ## Migraciones (EF Core)
