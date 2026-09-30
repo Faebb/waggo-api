@@ -20,7 +20,8 @@ public class MessageEndpointTests(WaggoApiFactory factory)
         await WalkScenario.AcceptAsync(walker, walk.Id);
 
         HttpResponseMessage first = await owner.PostAsJsonAsync(Messages(walk.Id), new { text = "¿Ya llegaste?" });
-        HttpResponseMessage second = await walker.PostAsJsonAsync(Messages(walk.Id), new { text = "Estoy en la portería" });
+        HttpResponseMessage second =
+            await walker.PostAsJsonAsync(Messages(walk.Id), new { text = "Estoy en la portería" });
         List<WalkMessageResponse> all = await ReadAsync(owner, Messages(walk.Id));
         List<WalkMessageResponse> newer = await ReadAsync(walker, Messages(walk.Id, after: all[0].Id));
 

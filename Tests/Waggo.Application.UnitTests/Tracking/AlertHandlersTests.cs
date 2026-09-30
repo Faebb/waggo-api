@@ -10,7 +10,7 @@ using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Common;
-using Waggo.Domain.Enums.Tracking;
+using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Tracking;
 using Waggo.Domain.Exceptions;
 
@@ -31,6 +31,8 @@ public class AlertHandlersTests
         return new RaiseEmergencyHandler(_walks, _alerts, _currentUser, new FixedTimeProvider());
     }
 
+    private static DateTimeOffset Later(int minutes) => FixedTimeProvider.Default.AddMinutes(minutes);
+
     private RaiseEmergencyCommand Command(string? message = "Luna se soltó") => new(_walk.Id, message, 4.64, -74.062);
 
     [Fact]
@@ -38,11 +40,12 @@ public class AlertHandlersTests
     {
         _walk.Accept("walker-1", FixedTimeProvider.Default);
 
-        WaggoResponse<WalkAlertResponse> result = await Raise("walker-1").HandleAsync(Command(), CancellationToken.None);
+        WaggoResponse<WalkAlertResponse> result =
+            await Raise("walker-1").HandleAsync(Command(), CancellationToken.None);
 
         (result.Data.Kind, result.Data.RaisedBy).ShouldBe(("Emergency", "Walker"));
         await _alerts.Received(1).AddAsync(
-            Arg.Is<WalkAlert>(alert => alert.RaisedBy == AlertParty.Walker && alert.WalkId == _walk.Id),
+            Arg.Is<WalkAlert>(alert => alert.RaisedBy == WalkParty.Walker && alert.WalkId == _walk.Id),
             Arg.Any<CancellationToken>());
     }
 
@@ -77,13 +80,15 @@ public class AlertHandlersTests
         _currentUser.Id.Returns("owner-1");
         IReadOnlyList<WalkAlert> stored =
         [
-            WalkAlert.RaiseEmergency(_walk.Id, AlertParty.Walker, "primera", null, FixedTimeProvider.Default).Data,
-            WalkAlert.RaiseEmergency(_walk.Id, AlertParty.Owner, "segunda", null, FixedTimeProvider.Default.AddMinutes(1)).Data,
+            WalkAlert.RaiseEmergency(_walk.Id, WalkParty.Walker, "primera", null, FixedTimeProvider.Default).Data,
+            WalkAlert.RaiseEmergency(_walk.Id, WalkParty.Owner, "segunda", null, Later(minutes: 1)).Data,
         ];
         _alerts.ListByWalkAsync(_walk.Id, Arg.Any<CancellationToken>()).Returns(stored);
 
-        WaggoResponse<IReadOnlyList<WalkAlertResponse>> result = await new ListWalkAlertsHandler(_walks, _alerts, _currentUser)
-            .HandleAsync(new ListWalkAlertsQuery(_walk.Id), CancellationToken.None);
+        ListWalkAlertsHandler sut = new(_walks, _alerts, _currentUser);
+
+        WaggoResponse<IReadOnlyList<WalkAlertResponse>> result =
+            await sut.HandleAsync(new ListWalkAlertsQuery(_walk.Id), CancellationToken.None);
 
         result.Data.Select(alert => alert.Message).ShouldBe(["segunda", "primera"]);
     }

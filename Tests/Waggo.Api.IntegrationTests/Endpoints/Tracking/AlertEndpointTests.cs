@@ -43,7 +43,8 @@ public class AlertEndpointTests(WaggoApiFactory factory)
         HttpResponseMessage raised = await owner.PostAsJsonAsync(WalkScenario.WalkUri(walk.Id, "emergency"), new { });
 
         raised.StatusCode.ShouldBe(HttpStatusCode.OK);
-        WalkAlertResponse alert = (await raised.Content.ReadFromJsonAsync<WaggoApiResponse<WalkAlertResponse>>())!.Data!;
+        WalkAlertResponse alert =
+            (await raised.Content.ReadFromJsonAsync<WaggoApiResponse<WalkAlertResponse>>())!.Data!;
         (alert.RaisedBy, alert.Message, alert.Latitude).ShouldBe(("Owner", null, null));
     }
 
@@ -70,7 +71,8 @@ public class AlertEndpointTests(WaggoApiFactory factory)
         using HttpClient stranger = WalkScenario.Client(factory, "owner,walker");
         WalkResponse walk = await WalkScenario.RequestAsync(owner);
 
-        HttpResponseMessage raised = await stranger.PostAsJsonAsync(WalkScenario.WalkUri(walk.Id, "emergency"), new { });
+        HttpResponseMessage raised =
+            await stranger.PostAsJsonAsync(WalkScenario.WalkUri(walk.Id, "emergency"), new { });
         HttpResponseMessage listed = await stranger.GetAsync(WalkScenario.WalkUri(walk.Id, "alerts"));
 
         raised.StatusCode.ShouldBe(HttpStatusCode.NotFound);

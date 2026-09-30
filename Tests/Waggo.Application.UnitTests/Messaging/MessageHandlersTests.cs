@@ -43,11 +43,14 @@ public class MessageHandlersTests
     [Fact]
     public async Task Send_Walker_SavesAWalkerMessage()
     {
-        WaggoResponse<WalkMessageResponse> result =
-            await Send("walker-1").HandleAsync(new SendMessageCommand(_walk.Id, "Estoy en la portería"), CancellationToken.None);
+        SendMessageCommand command = new(_walk.Id, "Estoy en la portería");
+
+        WaggoResponse<WalkMessageResponse> result = await Send("walker-1").HandleAsync(command, CancellationToken.None);
 
         (result.Data.SentBy, result.Data.Text).ShouldBe(("Walker", "Estoy en la portería"));
-        await _messages.Received(1).AddAsync(Arg.Is<WalkMessage>(m => m.SentBy == WalkParty.Walker), Arg.Any<CancellationToken>());
+        await _messages.Received(1).AddAsync(
+            Arg.Is<WalkMessage>(m => m.SentBy == WalkParty.Walker),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -72,8 +75,9 @@ public class MessageHandlersTests
     public async Task List_AfterAMessage_ReturnsOnlyTheNewerOnesInOrder()
     {
         WalkMessage first = WalkMessage.Send(_walk.Id, WalkParty.Owner, "uno", FixedTimeProvider.Default).Data;
-        WalkMessage second = WalkMessage.Send(_walk.Id, WalkParty.Walker, "dos", FixedTimeProvider.Default.AddSeconds(5)).Data;
-        WalkMessage third = WalkMessage.Send(_walk.Id, WalkParty.Owner, "tres", FixedTimeProvider.Default.AddSeconds(9)).Data;
+        DateTimeOffset now = FixedTimeProvider.Default;
+        WalkMessage second = WalkMessage.Send(_walk.Id, WalkParty.Walker, "dos", now.AddSeconds(5)).Data;
+        WalkMessage third = WalkMessage.Send(_walk.Id, WalkParty.Owner, "tres", now.AddSeconds(9)).Data;
         IReadOnlyList<WalkMessage> stored = [third, first, second];
         _messages.ListByWalkAsync(_walk.Id, Arg.Any<CancellationToken>()).Returns(stored);
 

@@ -1,6 +1,7 @@
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Enums.Tracking;
+using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Tracking;
 using Waggo.Domain.ValueObjects.Walks;
 
@@ -17,10 +18,10 @@ public class WalkAlertTests
         GeoPoint where = GeoPoint.Create(4.64, -74.062).Data;
 
         WaggoResponse<WalkAlert> result =
-            WalkAlert.RaiseEmergency(s_walkId, AlertParty.Walker, " Luna se soltó ", where, s_now);
+            WalkAlert.RaiseEmergency(s_walkId, WalkParty.Walker, " Luna se soltó ", where, s_now);
 
         WalkAlert alert = result.Data;
-        (alert.WalkId, alert.Kind, alert.RaisedBy).ShouldBe((s_walkId, AlertKind.Emergency, AlertParty.Walker));
+        (alert.WalkId, alert.Kind, alert.RaisedBy).ShouldBe((s_walkId, AlertKind.Emergency, WalkParty.Walker));
         alert.Message.ShouldBe("Luna se soltó");
         alert.Location.ShouldBe(where);
         alert.RaisedAt.ShouldBe(s_now);
@@ -29,7 +30,7 @@ public class WalkAlertTests
     [Fact]
     public void RaiseEmergency_BlankMessageAndNoLocation_AreNull()
     {
-        WalkAlert alert = WalkAlert.RaiseEmergency(s_walkId, AlertParty.Owner, "  ", null, s_now).Data;
+        WalkAlert alert = WalkAlert.RaiseEmergency(s_walkId, WalkParty.Owner, "  ", null, s_now).Data;
 
         alert.Message.ShouldBeNull();
         alert.Location.ShouldBeNull();
@@ -37,6 +38,6 @@ public class WalkAlertTests
 
     [Fact]
     public void RaiseEmergency_MessageLongerThan500_FailsWithInvalidMessage() =>
-        WalkAlert.RaiseEmergency(s_walkId, AlertParty.Owner, new string('a', 501), null, s_now)
+        WalkAlert.RaiseEmergency(s_walkId, WalkParty.Owner, new string('a', 501), null, s_now)
             .Errors.Single().Code.ShouldBe(AlertErrors.InvalidMessage.Code);
 }
