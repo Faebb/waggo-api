@@ -59,7 +59,7 @@ public class NotificationEndpointTests(WaggoApiFactory factory)
             new { message = "Luna se soltó" });
         raised.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        NotificationResponse notification = (await InboxAsync(owner)).Items.First();
+        NotificationResponse notification = (await InboxAsync(owner)).Items[0];
         (notification.Kind, notification.Priority).ShouldBe(("Emergency", "High"));
         (await InboxAsync(walker)).Items.ShouldBeEmpty();
     }
@@ -81,7 +81,7 @@ public class NotificationEndpointTests(WaggoApiFactory factory)
         });
         tracked.StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        NotificationResponse notification = (await InboxAsync(owner)).Items.First();
+        NotificationResponse notification = (await InboxAsync(owner)).Items[0];
         (notification.Kind, notification.Priority).ShouldBe(("Geofence", "High"));
     }
 

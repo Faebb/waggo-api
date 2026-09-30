@@ -1,9 +1,13 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Notifications;
+using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
 
@@ -14,6 +18,7 @@ internal sealed class CancelWalkHandler(
     IWalkRepository walks,
     IWalkPaymentRepository payments,
     IPaymentGateway gateway,
+    INotificationRepository notifications,
     ICurrentUser currentUser,
     TimeProvider timeProvider)
     : ICommandHandler<CancelWalkCommand, WalkResponse>
@@ -52,6 +57,13 @@ internal sealed class CancelWalkHandler(
         }
 
         await walks.SaveChangesAsync(cancellationToken);
+        if (walk.WalkerId is not null)
+        {
+            await notifications.AddRangeAsync(
+                [Notification.ForWalk(walk, WalkParty.Walker, NotificationKind.WalkCancelled, now)],
+                cancellationToken);
+        }
+
         response.Data = WalkResponse.From(walk);
         return response;
     }

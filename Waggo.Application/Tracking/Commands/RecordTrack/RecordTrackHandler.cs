@@ -1,11 +1,14 @@
 using FluentValidation;
 using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Tracking;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Notifications;
 using Waggo.Domain.Enums.Tracking;
 using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Tracking;
@@ -25,6 +28,7 @@ internal sealed class RecordTrackHandler(
     IWalkRepository walks,
     ITrackPointRepository points,
     IWalkAlertRepository alerts,
+    INotificationRepository notifications,
     ICurrentUser currentUser)
     : ICommandHandler<RecordTrackCommand, int>
 {
@@ -74,7 +78,17 @@ internal sealed class RecordTrackHandler(
             await alerts.AddAsync(alert, cancellationToken);
         }
 
+        if (raised.Count > 0)
+        {
+            await notifications.AddRangeAsync(
+                [.. raised.Select(alert => Notification.ForWalk(walk, WalkParty.Owner, KindOf(alert), alert.RaisedAt))],
+                cancellationToken);
+        }
+
         response.Data = batch.Count;
         return response;
     }
+
+    private static NotificationKind KindOf(WalkAlert alert) =>
+        alert.Kind == AlertKind.Geofence ? NotificationKind.Geofence : NotificationKind.Anomaly;
 }

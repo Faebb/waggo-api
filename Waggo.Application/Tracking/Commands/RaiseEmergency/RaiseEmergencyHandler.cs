@@ -1,9 +1,12 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Tracking;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Notifications;
 using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Tracking;
 using Waggo.Domain.Errors.Walks;
@@ -18,6 +21,7 @@ namespace Waggo.Application.Tracking.Commands.RaiseEmergency;
 internal sealed class RaiseEmergencyHandler(
     IWalkRepository walks,
     IWalkAlertRepository alerts,
+    INotificationRepository notifications,
     ICurrentUser currentUser,
     TimeProvider timeProvider)
     : ICommandHandler<RaiseEmergencyCommand, WalkAlertResponse>
@@ -70,6 +74,10 @@ internal sealed class RaiseEmergencyHandler(
         }
 
         await alerts.AddAsync(alert.Data, cancellationToken);
+        WalkParty otherSide = party == WalkParty.Owner ? WalkParty.Walker : WalkParty.Owner;
+        await notifications.AddRangeAsync(
+            [Notification.ForWalk(walk, otherSide, NotificationKind.Emergency, alert.Data.RaisedAt)],
+            cancellationToken);
         response.Data = WalkAlertResponse.From(alert.Data);
         return response;
     }

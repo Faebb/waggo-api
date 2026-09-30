@@ -43,7 +43,8 @@ public class StartAndFinishWalkHandlerTests
     [Fact]
     public async Task Start_AssignedWalker_StartsAndSaves()
     {
-        WaggoResponse<WalkResponse> result = await Start().HandleAsync(new StartWalkCommand(_walk.Id), CancellationToken.None);
+        WaggoResponse<WalkResponse> result =
+            await Start().HandleAsync(new StartWalkCommand(_walk.Id), CancellationToken.None);
 
         result.Data.Status.ShouldBe("InProgress");
         await _walks.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -100,16 +101,14 @@ public class StartAndFinishWalkHandlerTests
         _payments.GetByWalkAsync(_walk.Id, Arg.Any<CancellationToken>())
             .Returns(WalkPayment.Hold(_walk, "sim_hold_1", FixedTimeProvider.Default));
         await Start().HandleAsync(new StartWalkCommand(_walk.Id), CancellationToken.None);
+        IReadOnlyList<Notification> sent = [];
+        await _notifications.AddRangeAsync(
+            Arg.Do<IReadOnlyList<Notification>>(list => sent = list),
+            Arg.Any<CancellationToken>());
 
         await Finish().HandleAsync(new FinishWalkCommand(_walk.Id), CancellationToken.None);
 
-        await _notifications.Received(1).AddRangeAsync(
-            Arg.Is<IReadOnlyList<Notification>>(list =>
-                list.Select(n => (n.UserId, n.Kind)).SequenceEqual(new[]
-                {
-                    ("owner-1", NotificationKind.WalkFinished),
-                    ("walker-1", NotificationKind.WalkPaid),
-                })),
-            Arg.Any<CancellationToken>());
+        sent.Select(notification => (notification.UserId, notification.Kind))
+            .ShouldBe([("owner-1", NotificationKind.WalkFinished), ("walker-1", NotificationKind.WalkPaid)]);
     }
 }
