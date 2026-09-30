@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Tracking;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.Tracking;
@@ -24,6 +25,7 @@ public class TrackingHandlersTests
     private readonly ITrackPointRepository _points = Substitute.For<ITrackPointRepository>();
     private readonly IWalkAlertRepository _alerts = Substitute.For<IWalkAlertRepository>();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
+    private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly Walk _walk = WalkMother.Requested(ownerId: "owner-1");
 
     public TrackingHandlersTests()
@@ -35,7 +37,13 @@ public class TrackingHandlersTests
     private RecordTrackHandler Record(string userId)
     {
         _currentUser.Id.Returns(userId);
-        return new RecordTrackHandler(new RecordTrackCommandValidator(), _walks, _points, _alerts, _currentUser);
+        return new RecordTrackHandler(
+            new RecordTrackCommandValidator(),
+            _walks,
+            _points,
+            _alerts,
+            _notifications,
+            _currentUser);
     }
 
     private GetRouteHandler Route(string userId)

@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Tracking;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.Tracking;
@@ -7,9 +8,11 @@ using Waggo.Application.Tracking.Queries.ListWalkAlerts;
 using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.UnitTests.TestDoubles;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Tracking;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Common;
+using Waggo.Domain.Enums.Notifications;
 using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Tracking;
 using Waggo.Domain.Exceptions;
@@ -21,6 +24,7 @@ public class AlertHandlersTests
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
     private readonly IWalkAlertRepository _alerts = Substitute.For<IWalkAlertRepository>();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
+    private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly Walk _walk = WalkMother.Requested(ownerId: "owner-1");
 
     public AlertHandlersTests() => _walks.GetAsync(_walk.Id, Arg.Any<CancellationToken>()).Returns(_walk);
@@ -28,7 +32,7 @@ public class AlertHandlersTests
     private RaiseEmergencyHandler Raise(string userId)
     {
         _currentUser.Id.Returns(userId);
-        return new RaiseEmergencyHandler(_walks, _alerts, _currentUser, new FixedTimeProvider());
+        return new RaiseEmergencyHandler(_walks, _alerts, _notifications, _currentUser, new FixedTimeProvider());
     }
 
     private static DateTimeOffset Later(int minutes) => FixedTimeProvider.Default.AddMinutes(minutes);
@@ -91,5 +95,19 @@ public class AlertHandlersTests
             await sut.HandleAsync(new ListWalkAlertsQuery(_walk.Id), CancellationToken.None);
 
         result.Data.Select(alert => alert.Message).ShouldBe(["segunda", "primera"]);
+    }
+
+    [Fact]
+    public async Task Raise_ByTheWalker_TellsTheOwnerWithHighPriority()
+    {
+        _walk.Accept("walker-1", FixedTimeProvider.Default);
+
+        await Raise("walker-1").HandleAsync(Command(), CancellationToken.None);
+
+        await _notifications.Received(1).AddRangeAsync(
+            Arg.Is<IReadOnlyList<Notification>>(list => list.Single().UserId == "owner-1"
+                && list.Single().Kind == NotificationKind.Emergency
+                && list.Single().Priority == NotificationPriority.High),
+            Arg.Any<CancellationToken>());
     }
 }
