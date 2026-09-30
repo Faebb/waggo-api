@@ -6,10 +6,15 @@ using Waggo.Application.Pets.Commands.RegisterPet;
 using Waggo.Application.Pets.Queries.GetPet;
 using Waggo.Application.Pets.Queries.ListMyPets;
 using Waggo.Application.Pricing.Queries.QuoteFare;
+using Waggo.Application.Tracking;
+using Waggo.Application.Tracking.Commands.RecordTrack;
+using Waggo.Application.Tracking.Queries.GetRoute;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.AcceptWalk;
 using Waggo.Application.Walks.Commands.CancelWalk;
+using Waggo.Application.Walks.Commands.FinishWalk;
 using Waggo.Application.Walks.Commands.RequestWalk;
+using Waggo.Application.Walks.Commands.StartWalk;
 using Waggo.Application.Walks.Queries.GetWalk;
 using Waggo.Application.Walks.Queries.ListAssignedWalks;
 using Waggo.Application.Walks.Queries.ListAvailableWalks;
@@ -41,6 +46,11 @@ public static class DependencyInjection
             ListAvailableWalksHandler>();
         services.AddScoped<IQueryHandler<ListAssignedWalksQuery, IReadOnlyList<WalkResponse>>,
             ListAssignedWalksHandler>();
+        services.AddScoped<ICommandHandler<StartWalkCommand, WalkResponse>, StartWalkHandler>();
+        services.AddScoped<ICommandHandler<FinishWalkCommand, WalkResponse>, FinishWalkHandler>();
+
+        services.AddScoped<ICommandHandler<RecordTrackCommand, int>, RecordTrackHandler>();
+        services.AddScoped<IQueryHandler<GetRouteQuery, RouteResponse>, GetRouteHandler>();
         return services;
     }
 }

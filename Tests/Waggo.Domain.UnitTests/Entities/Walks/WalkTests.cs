@@ -143,6 +143,56 @@ public class WalkTests
         Request().Data.Accept("owner-1", s_now).Errors.Single().Code.ShouldBe(WalkErrors.OwnWalk.Code);
 
     [Fact]
+    public void Start_AcceptedWalk_MovesToInProgress()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+
+        WaggoResponse<Walk> result = walk.Start(s_now.AddMinutes(10));
+
+        result.IsValid.ShouldBeTrue();
+        walk.Status.ShouldBe(WalkStatus.InProgress);
+        walk.StartedAt.ShouldBe(s_now.AddMinutes(10));
+    }
+
+    [Fact]
+    public void Start_RequestedWalk_FailsWithCannotStart() =>
+        Request().Data.Start(s_now).Errors.Single().Code.ShouldBe(WalkErrors.CannotStart.Code);
+
+    [Fact]
+    public void Finish_InProgressWalk_Completes()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+        walk.Start(s_now);
+
+        WaggoResponse<Walk> result = walk.Finish(s_now.AddMinutes(55));
+
+        result.IsValid.ShouldBeTrue();
+        walk.Status.ShouldBe(WalkStatus.Completed);
+        walk.FinishedAt.ShouldBe(s_now.AddMinutes(55));
+    }
+
+    [Fact]
+    public void Finish_AcceptedWalk_FailsWithCannotFinish()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+
+        walk.Finish(s_now).Errors.Single().Code.ShouldBe(WalkErrors.CannotFinish.Code);
+    }
+
+    [Fact]
+    public void Cancel_InProgressWalk_FailsWithCannotCancel()
+    {
+        Walk walk = Request().Data;
+        walk.Accept("walker-1", s_now);
+        walk.Start(s_now);
+
+        walk.Cancel(s_now).Errors.Single().Code.ShouldBe(WalkErrors.CannotCancel.Code);
+    }
+
+    [Fact]
     public void Cancel_AcceptedWalk_MovesToCancelled()
     {
         Walk walk = Request().Data;

@@ -19,7 +19,9 @@ public sealed record WalkResponse(
     decimal Commission,
     decimal WalkerPayout,
     string? WalkerId,
-    DateTimeOffset RequestedAt)
+    DateTimeOffset RequestedAt,
+    DateTimeOffset? StartedAt,
+    DateTimeOffset? FinishedAt)
 {
     public static WalkResponse From(Walk walk)
     {
@@ -40,6 +42,8 @@ public sealed record WalkResponse(
             walk.Commission,
             walk.WalkerPayout,
             walk.WalkerId,
-            walk.RequestedAt);
+            walk.RequestedAt,
+            walk.StartedAt,
+            walk.FinishedAt);
     }
 }

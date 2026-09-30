@@ -41,6 +41,16 @@ public static class WalkErrors
         "No puedes aceptar un paseo que pediste tú.",
         ErrorType.BusinessRule);
 
+    public static readonly Error CannotStart = new(
+        "Walks.CannotStart",
+        "Solo puedes iniciar un paseo que aceptaste y que aún no empieza.",
+        ErrorType.BusinessRule);
+
+    public static readonly Error CannotFinish = new(
+        "Walks.CannotFinish",
+        "Solo puedes terminar un paseo que está en curso.",
+        ErrorType.BusinessRule);
+
     public static readonly Error NotFound = new(
         "Walks.NotFound",
         "No encontramos ese paseo entre los tuyos.",

@@ -65,6 +65,10 @@ public sealed class Walk
 
     public DateTimeOffset? AcceptedAt { get; private set; }
 
+    public DateTimeOffset? StartedAt { get; private set; }
+
+    public DateTimeOffset? FinishedAt { get; private set; }
+
     public DateTimeOffset? CancelledAt { get; private set; }
 
     /// <summary>
@@ -160,6 +164,40 @@ public sealed class Walk
         Status = WalkStatus.Accepted;
         WalkerId = walkerId;
         AcceptedAt = now;
+        response.Data = this;
+        return response;
+    }
+
+    /// <summary>The walker picked the dogs up: the walk is live (RF-008).</summary>
+    public WaggoResponse<Walk> Start(DateTimeOffset now)
+    {
+        WaggoResponse<Walk> response = new();
+
+        if (Status != WalkStatus.Accepted)
+        {
+            response.AddError(WalkErrors.CannotStart);
+            return response;
+        }
+
+        Status = WalkStatus.InProgress;
+        StartedAt = now;
+        response.Data = this;
+        return response;
+    }
+
+    /// <summary>The walker brought the dogs back (RF-011 closes its summary here).</summary>
+    public WaggoResponse<Walk> Finish(DateTimeOffset now)
+    {
+        WaggoResponse<Walk> response = new();
+
+        if (Status != WalkStatus.InProgress)
+        {
+            response.AddError(WalkErrors.CannotFinish);
+            return response;
+        }
+
+        Status = WalkStatus.Completed;
+        FinishedAt = now;
         response.Data = this;
         return response;
     }
