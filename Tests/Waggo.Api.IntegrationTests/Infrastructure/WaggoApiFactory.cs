@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Testcontainers.PostgreSql;
@@ -33,5 +34,11 @@ public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLife
         // Other roles can be tried per request with the X-Dev-Roles header.
         builder.UseSetting("Authentication:UseDevelopmentUser", "true");
         builder.UseSetting("Authentication:DevelopmentUser:Roles:0", "owner");
+
+        // A fresh key per run: encrypted columns only need to round-trip inside the test run (RNF-003).
+        builder.UseSetting("Encryption:Key", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
+
+        // Every test shares the development user name, so the per-user rate limit must not get in the way.
+        builder.UseSetting("RateLimiting:PermitLimit", "10000");
     }
 }
