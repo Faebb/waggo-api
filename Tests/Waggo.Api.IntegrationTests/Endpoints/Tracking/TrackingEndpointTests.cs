@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using Waggo.Api.Infrastructure.Responses;
 using Waggo.Api.IntegrationTests.Infrastructure;
-using Waggo.Application.Pets;
 using Waggo.Application.Tracking;
 using Waggo.Application.Walks;
 
@@ -129,44 +128,20 @@ public class TrackingEndpointTests(WaggoApiFactory factory)
     private static object OnePoint() =>
         new { points = new[] { new { latitude = 4.6361, longitude = -74.0645, recordedAt = DateTimeOffset.UtcNow } } };
 
-    private HttpClient Client(string roles)
-    {
-        HttpClient client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Dev-User-Id", $"{roles}-{Guid.NewGuid():N}");
-        client.DefaultRequestHeaders.Add("X-Dev-Roles", roles);
-        return client;
-    }
+    private HttpClient Client(string roles) => WalkScenario.Client(factory, roles);
 
-    private static Uri Uri(Guid walkId, string action) => new($"/api/v1/walks/{walkId}/{action}", UriKind.Relative);
+    private static Uri Uri(Guid walkId, string action) => WalkScenario.WalkUri(walkId, action);
 
     /// <summary>An owner requests a walk and a walker accepts it.</summary>
     private async Task<(HttpClient Owner, HttpClient Walker, WalkResponse Walk)> AcceptedWalkAsync()
     {
         HttpClient owner = Client("owner");
         HttpClient walker = Client("walker");
-
-        HttpResponseMessage pet = await owner.PostAsJsonAsync(
-            new Uri("/api/v1/pets", UriKind.Relative),
-            new { name = "Luna", size = "Medium" });
-        Guid petId = (await pet.Content.ReadFromJsonAsync<WaggoApiResponse<PetResponse>>())!.Data!.Id;
-        HttpResponseMessage requested = await owner.PostAsJsonAsync(new Uri("/api/v1/walks", UriKind.Relative), new
-        {
-            petIds = new[] { petId },
-            walkType = "Individual",
-            durationMinutes = 60,
-            pickupAddress = "Cra 7 # 45-10, Bogotá",
-            latitude = 4.6361,
-            longitude = -74.0645,
-        });
-        WalkResponse walk = (await requested.Content.ReadFromJsonAsync<WaggoApiResponse<WalkResponse>>())!.Data!;
-        (await walker.PostAsync(Uri(walk.Id, "accept"), content: null)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        WalkResponse walk = await WalkScenario.RequestAsync(owner);
+        await WalkScenario.AcceptAsync(walker, walk.Id);
         return (owner, walker, walk);
     }
 
-    private static async Task ShouldHaveSingleErrorAsync(HttpResponseMessage response, string code)
-    {
-        WaggoApiResponse<object>? body = await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
-        body!.Success.ShouldBeFalse();
-        body.Errors.Single().Code.ShouldBe(code);
-    }
+    private static Task ShouldHaveSingleErrorAsync(HttpResponseMessage response, string code) =>
+        WalkScenario.ShouldHaveSingleErrorAsync(response, code);
 }
