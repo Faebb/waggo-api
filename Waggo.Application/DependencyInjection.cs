@@ -4,6 +4,9 @@ using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Messaging;
 using Waggo.Application.Messaging.Commands.SendMessage;
 using Waggo.Application.Messaging.Queries.ListMessages;
+using Waggo.Application.Notifications;
+using Waggo.Application.Notifications.Commands.MarkNotificationsRead;
+using Waggo.Application.Notifications.Queries.ListMyNotifications;
 using Waggo.Application.Payments;
 using Waggo.Application.Payments.Queries.GetMyEarnings;
 using Waggo.Application.Payments.Queries.GetWalkPayment;
@@ -79,6 +82,10 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RejectWalkerCommand, WalkerProfileResponse>, RejectWalkerHandler>();
         services.AddScoped<IQueryHandler<GetWalkPaymentQuery, WalkPaymentResponse>, GetWalkPaymentHandler>();
         services.AddScoped<IQueryHandler<GetMyEarningsQuery, WalkerEarningsResponse>, GetMyEarningsHandler>();
+        services.AddScoped<IQueryHandler<ListMyNotificationsQuery, NotificationsResponse>,
+            ListMyNotificationsHandler>();
+        services.AddScoped<ICommandHandler<MarkNotificationsReadCommand, NotificationsResponse>,
+            MarkNotificationsReadHandler>();
         return services;
     }
 }

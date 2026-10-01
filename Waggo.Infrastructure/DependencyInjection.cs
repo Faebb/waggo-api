@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Waggo.Application.Common.Interfaces.Messaging;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Pets;
 using Waggo.Application.Common.Interfaces.Pricing;
@@ -14,6 +15,7 @@ using Waggo.Infrastructure.Options.Pricing;
 using Waggo.Infrastructure.Options.Security;
 using Waggo.Infrastructure.Persistence.Context;
 using Waggo.Infrastructure.Services.Messaging;
+using Waggo.Infrastructure.Services.Notifications;
 using Waggo.Infrastructure.Services.Payments;
 using Waggo.Infrastructure.Services.Pets;
 using Waggo.Infrastructure.Services.Pricing;
@@ -65,6 +67,7 @@ public static class DependencyInjection
         services.AddScoped<IWalkMessageRepository, WalkMessageRepository>();
         services.AddScoped<IWalkerProfileRepository, WalkerProfileRepository>();
         services.AddScoped<IWalkPaymentRepository, WalkPaymentRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres", tags: ["ready"]);
 

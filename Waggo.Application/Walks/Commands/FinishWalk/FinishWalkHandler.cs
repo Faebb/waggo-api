@@ -1,10 +1,14 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.Common.Models.Payments;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Walks;
+using Waggo.Domain.Enums.Notifications;
+using Waggo.Domain.Enums.Walks;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
 
@@ -18,6 +22,7 @@ internal sealed class FinishWalkHandler(
     IWalkRepository walks,
     IWalkPaymentRepository payments,
     IPaymentGateway gateway,
+    INotificationRepository notifications,
     ICurrentUser currentUser,
     TimeProvider timeProvider)
     : ICommandHandler<FinishWalkCommand, WalkResponse>
@@ -66,6 +71,14 @@ internal sealed class FinishWalkHandler(
         }
 
         await walks.SaveChangesAsync(cancellationToken);
+
+        List<Notification> notices = [Notification.ForWalk(walk, WalkParty.Owner, NotificationKind.WalkFinished, now)];
+        if (payment is not null)
+        {
+            notices.Add(Notification.ForWalk(walk, WalkParty.Walker, NotificationKind.WalkPaid, now));
+        }
+
+        await notifications.AddRangeAsync(notices, cancellationToken);
         response.Data = WalkResponse.From(walk);
         return response;
     }

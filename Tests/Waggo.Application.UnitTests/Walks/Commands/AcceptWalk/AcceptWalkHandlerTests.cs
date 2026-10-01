@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.UnitTests.TestData;
@@ -6,8 +7,10 @@ using Waggo.Application.UnitTests.TestDoubles;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.AcceptWalk;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Common;
+using Waggo.Domain.Enums.Notifications;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
 
@@ -18,12 +21,13 @@ public class AcceptWalkHandlerTests
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly IWalkerProfileRepository _walkerProfiles = WalkerMother.VerifiedRepository("walker-1");
+    private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly AcceptWalkHandler _sut;
 
     public AcceptWalkHandlerTests()
     {
         _currentUser.Id.Returns("walker-1");
-        _sut = new AcceptWalkHandler(_walks, _walkerProfiles, _currentUser, new FixedTimeProvider());
+        _sut = new AcceptWalkHandler(_walks, _walkerProfiles, _notifications, _currentUser, new FixedTimeProvider());
     }
 
     [Fact]
@@ -58,4 +62,18 @@ public class AcceptWalkHandlerTests
     public async Task HandleAsync_UnknownWalk_ThrowsNotFound() =>
         await Should.ThrowAsync<NotFoundException>(
             () => _sut.HandleAsync(new AcceptWalkCommand(Guid.NewGuid()), CancellationToken.None));
+
+    [Fact]
+    public async Task HandleAsync_OpenRequest_TellsTheOwner()
+    {
+        Walk walk = WalkMother.Requested();
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        await _sut.HandleAsync(new AcceptWalkCommand(walk.Id), CancellationToken.None);
+
+        await _notifications.Received(1).AddRangeAsync(
+            Arg.Is<IReadOnlyList<Notification>>(list =>
+                list.Single().UserId == "owner-1" && list.Single().Kind == NotificationKind.WalkAccepted),
+            Arg.Any<CancellationToken>());
+    }
 }

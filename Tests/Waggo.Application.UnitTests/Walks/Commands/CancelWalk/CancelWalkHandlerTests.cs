@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.UnitTests.TestData;
@@ -6,9 +7,11 @@ using Waggo.Application.UnitTests.TestDoubles;
 using Waggo.Application.Walks;
 using Waggo.Application.Walks.Commands.CancelWalk;
 using Waggo.Domain.Common;
+using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Payments;
 using Waggo.Domain.Entities.Walks;
 using Waggo.Domain.Enums.Common;
+using Waggo.Domain.Enums.Notifications;
 using Waggo.Domain.Enums.Payments;
 using Waggo.Domain.Errors.Walks;
 using Waggo.Domain.Exceptions;
@@ -21,12 +24,13 @@ public class CancelWalkHandlerTests
     private readonly IWalkPaymentRepository _payments = Substitute.For<IWalkPaymentRepository>();
     private readonly IPaymentGateway _gateway = PaymentMother.ApprovingGateway();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
+    private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
     private readonly CancelWalkHandler _sut;
 
     public CancelWalkHandlerTests()
     {
         _currentUser.Id.Returns("owner-1");
-        _sut = new CancelWalkHandler(_walks, _payments, _gateway, _currentUser, new FixedTimeProvider());
+        _sut = new CancelWalkHandler(_walks, _payments, _gateway, _notifications, _currentUser, new FixedTimeProvider());
     }
 
     [Fact]
@@ -81,5 +85,32 @@ public class CancelWalkHandlerTests
 
         payment.Status.ShouldBe(PaymentStatus.Released);
         await _gateway.Received(1).ReleaseAsync("sim_hold_1", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_AcceptedWalk_TellsTheWalker()
+    {
+        Walk walk = WalkMother.Requested();
+        walk.Accept("walker-1", FixedTimeProvider.Default);
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        await _sut.HandleAsync(new CancelWalkCommand(walk.Id), CancellationToken.None);
+
+        await _notifications.Received(1).AddRangeAsync(
+            Arg.Is<IReadOnlyList<Notification>>(list =>
+                list.Single().UserId == "walker-1" && list.Single().Kind == NotificationKind.WalkCancelled),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WalkWithoutWalker_TellsNobody()
+    {
+        Walk walk = WalkMother.Requested();
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        await _sut.HandleAsync(new CancelWalkCommand(walk.Id), CancellationToken.None);
+
+        await _notifications.DidNotReceive()
+            .AddRangeAsync(Arg.Any<IReadOnlyList<Notification>>(), Arg.Any<CancellationToken>());
     }
 }

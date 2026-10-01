@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Waggo.Api.Endpoints.Messaging;
+using Waggo.Api.Endpoints.Notifications;
 using Waggo.Api.Endpoints.Payments;
 using Waggo.Api.Endpoints.Pets;
 using Waggo.Api.Endpoints.Pricing;
@@ -69,6 +70,7 @@ public static class PipelineExtensions
         v1.MapMessagingEndpoints();
         v1.MapWalkersEndpoints();
         v1.MapPaymentsEndpoints();
+        v1.MapNotificationsEndpoints();
 
         return app;
     }
