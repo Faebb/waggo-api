@@ -11,6 +11,7 @@ using Waggo.Application.Common.Interfaces.Pricing;
 using Waggo.Application.Common.Interfaces.Tracking;
 using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
+using Waggo.Infrastructure.Options.Identity;
 using Waggo.Infrastructure.Options.Payments;
 using Waggo.Infrastructure.Options.Pricing;
 using Waggo.Infrastructure.Options.Security;
@@ -61,10 +62,17 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
 
-        // RF-001, RNF-001, RNF-002 (ADR-016): own identity, no external provider.
+        // RF-001, RF-005, RNF-001, RNF-002 (ADR-016): own identity, no external provider.
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ILoginChallengeRepository, LoginChallengeRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
+        services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
 
         services.AddSingleton<IPricingTableProvider, ConfigurationPricingTableProvider>();

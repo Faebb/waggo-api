@@ -12,7 +12,7 @@ namespace Waggo.Api.IntegrationTests.Infrastructure;
 /// Boots the real API against a throw-away PostgreSQL + PostGIS container.
 /// Requires Docker running on the machine (Docker Desktop on Windows).
 /// </summary>
-public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly PostgreSqlContainer _db = new PostgreSqlBuilder("postgis/postgis:17-3.5")
         .WithDatabase("waggo_tests")
@@ -41,6 +41,9 @@ public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLife
         // A fresh key per run: encrypted columns only need to round-trip inside the test run (RNF-003).
         builder.UseSetting("Payments:Provider", "Simulated");
         builder.UseSetting("Encryption:Key", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
+
+        // Token issuance (RF-005) runs regardless of the development user, so it always needs a signing key.
+        builder.UseSetting("Authentication:Jwt:SigningKey", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
 
         // Every test shares the development user name, so the per-user rate limit must not get in the way.
         builder.UseSetting("RateLimiting:PermitLimit", "10000");

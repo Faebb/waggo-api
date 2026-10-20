@@ -5,7 +5,10 @@ using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
+using Waggo.Application.Identity.Commands.Login;
+using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
+using Waggo.Application.Identity.Commands.VerifyLoginCode;
 using Waggo.Domain.Common;
 
 namespace Waggo.Api.Endpoints.Identity;
@@ -32,6 +35,21 @@ internal static class IdentityEndpoints
             .WithRequestValidation<ConfirmRequest>()
             .Produces<WaggoApiResponse<bool>>();
 
+        group.MapPost("/login", LoginAsync)
+            .WithName("Login")
+            .WithRequestValidation<LoginRequest>()
+            .Produces<WaggoApiResponse<LoginResponse>>();
+
+        group.MapPost("/login/verify", VerifyLoginCodeAsync)
+            .WithName("VerifyLoginCode")
+            .WithRequestValidation<VerifyLoginCodeRequest>()
+            .Produces<WaggoApiResponse<SessionResponse>>();
+
+        group.MapPost("/refresh", RefreshAsync)
+            .WithName("Refresh")
+            .WithRequestValidation<RefreshRequest>()
+            .Produces<WaggoApiResponse<SessionResponse>>();
+
         return routes;
     }
 
@@ -54,6 +72,39 @@ internal static class IdentityEndpoints
     {
         WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "ConfirmEmail");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> LoginAsync(
+        LoginRequest request,
+        ICommandHandler<LoginCommand, LoginResponse> handler,
+        ILogger<LoginRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<LoginResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "Login");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> VerifyLoginCodeAsync(
+        VerifyLoginCodeRequest request,
+        ICommandHandler<VerifyLoginCodeCommand, SessionResponse> handler,
+        ILogger<VerifyLoginCodeRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "VerifyLoginCode");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> RefreshAsync(
+        RefreshRequest request,
+        ICommandHandler<RefreshSessionCommand, SessionResponse> handler,
+        ILogger<RefreshRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "Refresh");
         return response.ToApiResult();
     }
 }

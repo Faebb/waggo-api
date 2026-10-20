@@ -67,4 +67,44 @@ public class UserTests
         result.ErrorType.ShouldBe(ErrorType.Conflict);
         user.EmailConfirmed.ShouldBeFalse();
     }
+
+    [Fact]
+    public void RegisterFailedLoginAttempt_BelowTheMax_JustCounts()
+    {
+        User user = User.Register("ana@mail.com", "hash", "token-hash", s_now).Data;
+
+        for (int i = 0; i < User.MaxFailedLoginAttempts - 1; i++)
+        {
+            user.RegisterFailedLoginAttempt(s_now);
+        }
+
+        user.FailedLoginAttempts.ShouldBe(User.MaxFailedLoginAttempts - 1);
+        user.IsLocked(s_now).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void RegisterFailedLoginAttempt_ReachingTheMax_LocksTheAccountAndResetsTheCounter()
+    {
+        User user = User.Register("ana@mail.com", "hash", "token-hash", s_now).Data;
+
+        for (int i = 0; i < User.MaxFailedLoginAttempts; i++)
+        {
+            user.RegisterFailedLoginAttempt(s_now);
+        }
+
+        user.FailedLoginAttempts.ShouldBe(0);
+        user.IsLocked(s_now).ShouldBeTrue();
+        user.IsLocked(s_now.Add(User.LockoutDuration).AddSeconds(1)).ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ResetFailedLoginAttempts_ClearsTheCounter()
+    {
+        User user = User.Register("ana@mail.com", "hash", "token-hash", s_now).Data;
+        user.RegisterFailedLoginAttempt(s_now);
+
+        user.ResetFailedLoginAttempts();
+
+        user.FailedLoginAttempts.ShouldBe(0);
+    }
 }

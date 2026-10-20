@@ -36,4 +36,28 @@ public static class IdentityErrors
         "Identity.AccountNotConfirmed",
         "Confirma tu correo antes de iniciar sesión.",
         ErrorType.BusinessRule);
+
+    public static readonly Error TooManyAttempts = new(
+        "Identity.TooManyAttempts",
+        "Demasiados intentos, espera 15 minutos.",
+        ErrorType.BusinessRule);
+
+    public static readonly Error ChallengeNotFound = new(
+        "Identity.ChallengeNotFound",
+        "Vuelve a iniciar sesión.",
+        ErrorType.NotFound);
+
+    public static readonly Error CodeExpired = new(
+        "Identity.CodeExpired",
+        "El código expiró, pide uno nuevo.",
+        ErrorType.Conflict);
+
+    public static readonly Error InvalidCode = new(
+        "Identity.InvalidCode",
+        "El código no es correcto.");
+
+    public static readonly Error RefreshTokenInvalid = new(
+        "Identity.RefreshTokenInvalid",
+        "Tu sesión expiró, inicia sesión de nuevo.",
+        ErrorType.Unauthorized);
 }

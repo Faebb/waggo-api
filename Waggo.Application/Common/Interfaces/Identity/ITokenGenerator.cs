@@ -8,5 +8,8 @@ public interface ITokenGenerator
 {
     string GenerateToken();
 
+    /// <summary>6-digit one-time code for the login second factor (RF-005), e.g. "048213".</summary>
+    string GenerateNumericCode();
+
     string Hash(string token);
 }
