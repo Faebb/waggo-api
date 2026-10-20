@@ -103,8 +103,72 @@ Endpoints del dueño (rol `owner`), siempre limitados a sus propios perros:
 | `GET` | `/api/v1/pets` | Lista mis perros ordenados por nombre (máximo 10) |
 | `GET` | `/api/v1/pets/{id}` | Detalle de uno de mis perros; `404 Pets.NotFound` si no existe o es de otro dueño |
 
+## Paseos (RF-007, lado del dueño)
+Como pedir un Uber: el dueño elige de 1 a 3 de sus perros, tipo, duración, punto de recogida y hora (ahora o hasta 14 días), y el precio queda congelado con la tarifa vigente.
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/api/v1/walks` | Pide un paseo: `petIds`, `walkType`, `durationMinutes`, `pickupAddress`, `latitude`, `longitude` y opcionales `scheduledFor` (vacío = ahora) y `notes` |
+| `GET` | `/api/v1/walks` | Mis paseos, el más reciente primero |
+| `GET` | `/api/v1/walks/{id}` | Detalle (la app lo consulta para saber cuándo lo acepta un paseador) |
+| `POST` | `/api/v1/walks/{id}/cancel` | Cancela un paseo `Requested` o `Accepted`; si no, `422 Walks.CannotCancel` |
+
+Lado del paseador (rol `walker`), como un conductor que ve solicitudes:
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/v1/walks/available?latitude=&longitude=` | Solicitudes abiertas de otros usuarios con lo que gana el paseador; con ubicación, las más cercanas primero y `distanceKm` |
+| `POST` | `/api/v1/walks/{id}/accept` | Acepta; el primero gana. `409 Walks.NotAvailable` si ya la tomó otro, `422 Walks.OwnWalk` si es su propio paseo |
+| `GET` | `/api/v1/walks/assigned` | Paseos que aceptó |
+
+Con ubicación, `available` usa **PostGIS** (RF-006): `ST_DWithin` sobre el índice GiST devuelve solo las solicitudes a menos de 5 km, ordenadas por `ST_Distance`.
+
+`GET /api/v1/walks/{id}` responde al dueño y al paseador asignado. Dos aceptaciones simultáneas no pueden ganar ambas: `walks` usa `xmin` de PostgreSQL como token de concurrencia optimista.
+
+## Paseo en vivo (RF-008, RF-011)
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `POST` | `/api/v1/walks/{id}/start` | El paseador asignado inicia el paseo (`Accepted → InProgress`) |
+| `POST` | `/api/v1/walks/{id}/track` | Lote de 1–100 posiciones `{ latitude, longitude, recordedAt }` mientras está en curso |
+| `GET` | `/api/v1/walks/{id}/track` | Ruta ordenada con `distanceKm` y `elapsedMinutes` (dueño o paseador) |
+| `POST` | `/api/v1/walks/{id}/finish` | El paseador termina el paseo (`InProgress → Completed`) |
+
+**Paseadores verificados (RF-002, RF-003)**: `POST /api/v1/walkers/me` `{ fullName, documentType: CC|CE|PP, documentNumber, phone, experience? }` crea el perfil del paseador en estado `Pending` y `GET /api/v1/walkers/me` lo devuelve (el documento va cifrado en `identity.walker_profiles`; la respuesta solo trae `documentLast4`). Un administrador verifica a mano mientras se elige proveedor: `GET /api/v1/admin/walkers?status=Pending`, `POST /api/v1/admin/walkers/{id}/approve` y `POST /api/v1/admin/walkers/{id}/reject` `{ reason }`. Solo un paseador `Approved` lista solicitudes y acepta paseos (si no, `403 Walkers.NotVerified`). En local, para probar el lado del paseador:
+
+```bash
+curl -X POST -H "X-Dev-User-Id: dev-admin" -H "X-Dev-Roles: admin" http://localhost:8080/api/v1/admin/walkers/<id>/approve
+```
+
+**Emergencia (RF-012)**: `POST /api/v1/walks/{id}/emergency` (dueño o paseador asignado; `message`, `latitude` y `longitude` opcionales) mientras el paseo está aceptado o en curso, y `GET /api/v1/walks/{id}/alerts` para ver las alertas, la más reciente primero. Se guardan en `tracking.walk_alerts`.
+
+**Alertas automáticas (RF-009, RF-010)**: al recibir cada lote de posiciones, la API crea alertas sin `raisedBy` cuando el paseo sale de un radio de 1,5 km alrededor de la recogida (`Geofence`, al cruzar el borde) o cuando el paseador lleva 10 minutos a menos de 30 m (`Anomaly`, una vez por detención). Se ven en el mismo `GET /api/v1/walks/{id}/alerts`. Los umbrales son provisionales (`WalkMonitor`).
+
+**Chat (RF-013)**: `POST /api/v1/walks/{id}/messages` `{ text }` y `GET /api/v1/walks/{id}/messages?after={messageId}` para el dueño y el paseador asignado. Se escribe mientras el paseo está aceptado o en curso (`422 Messages.ChatClosed` después) y se lee siempre. Tabla `messaging.walk_messages`.
+
+Las posiciones se guardan en `tracking.track_points` (GiST en la posición, BRIN en el tiempo). Por ahora la app consulta la ruta cada pocos segundos; SignalR (RNF-007) llegará en otro slice.
+
+Estados: `Requested → Accepted → InProgress → Completed`, o `Cancelled`. El punto de recogida se guarda como `geography(Point, 4326)` de PostGIS con índice GiST, para el matching por cercanía (RF-006).
+
+## Notificaciones (RF-014)
+Cada momento del paseo deja un aviso para la otra parte en `messaging.notifications`. Al dueño le avisa cuando aceptan, inician o terminan su paseo, y de las alertas automáticas. Al paseador, cuando le pagan o cuando el dueño cancela. Las emergencias le llegan a la otra parte. Emergencias y alertas son `priority: High`.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/v1/notifications` | `unreadCount` y los 50 avisos más recientes del usuario |
+| `POST` | `/api/v1/notifications/read` | Marca todos como leídos |
+
+Por ahora la app consulta cada 15 s. El envío *push* llegará en otro slice y usará esta misma tabla como *outbox* (RNF-008).
+
+## Pagos (RF-015 – RF-018)
+Sin efectivo, como en Uber. Al **pedir** el paseo se retiene el total en el método de pago del dueño; si la pasarela lo rechaza, responde `422 Payments.Declined` y el paseo no se crea. Al **cancelar**, la retención se libera. Al **terminar**, se cobra: la comisión queda para Waggo y `walkerPayout` va al paseador. Solo se guarda la referencia de la pasarela, nunca datos de tarjeta (RNF-004). Tabla `payments.walk_payments`.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/v1/walks/{id}/payment` | Estado del pago (`Held`, `Captured`, `Released`) para el dueño o el paseador asignado |
+| `GET` | `/api/v1/payments/earnings` | Lo que ha ganado el paseador: total y paseos cobrados |
+
+Mientras se elige el proveedor (Stripe o MercadoPago) solo existe la pasarela **simulada** (`Payments:Provider = Simulated`). Viene configurada en Development y en las pruebas, y en cualquier otro ambiente la API no arranca. La simulación rechaza a los usuarios cuyo id contiene `card-declined`, así que un rechazo se prueba con el encabezado `X-Dev-User-Id: owner-card-declined`.
+
 ## Base de datos y datos sensibles
-- EF Core + Npgsql con nombres `snake_case` y un schema por módulo (`pets`, …).
+- EF Core + Npgsql con nombres `snake_case` y un schema por módulo (`pets`, `walks`, …). Las posiciones usan PostGIS a través de NetTopologySuite; el dominio solo conoce su `GeoPoint`.
 - Las columnas sensibles (hoy `pets.medical_notes`) se guardan **cifradas con AES-256-GCM** (RNF-003). La llave es `Encryption:Key`: 32 bytes aleatorios en base64 (`openssl rand -base64 32`). En Development viene en `appsettings.Development.json`; en cualquier otro ambiente se configura con un secreto o con la variable `Encryption__Key`, y la API no arranca sin ella.
 
 ## Migraciones (EF Core)

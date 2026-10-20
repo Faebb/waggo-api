@@ -15,7 +15,7 @@ internal sealed class WaggoDbContextFactory : IDesignTimeDbContextFactory<WaggoD
     public WaggoDbContext CreateDbContext(string[] args)
     {
         DbContextOptions<WaggoDbContext> options = new DbContextOptionsBuilder<WaggoDbContext>()
-            .UseNpgsql("Host=localhost;Database=waggo_design_time")
+            .UseNpgsql("Host=localhost;Database=waggo_design_time", npgsql => npgsql.UseNetTopologySuite())
             .UseSnakeCaseNamingConvention()
             .Options;
 
