@@ -1,6 +1,9 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Identity;
+using Waggo.Application.Identity.Commands.ConfirmEmail;
+using Waggo.Application.Identity.Commands.Register;
 using Waggo.Application.Messaging;
 using Waggo.Application.Messaging.Commands.SendMessage;
 using Waggo.Application.Messaging.Queries.ListMessages;
@@ -47,6 +50,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
 
         services.AddSingleton(TimeProvider.System);
+
+        services.AddScoped<ICommandHandler<RegisterCommand, UserResponse>, RegisterHandler>();
+        services.AddScoped<ICommandHandler<ConfirmEmailCommand, bool>, ConfirmEmailHandler>();
 
         services.AddScoped<IQueryHandler<QuoteFareQuery, FareQuoteResponse>, QuoteFareHandler>();
 

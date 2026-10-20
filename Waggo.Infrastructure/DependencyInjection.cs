@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Waggo.Application.Common.Interfaces.Identity;
 using Waggo.Application.Common.Interfaces.Messaging;
 using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
@@ -14,6 +15,7 @@ using Waggo.Infrastructure.Options.Payments;
 using Waggo.Infrastructure.Options.Pricing;
 using Waggo.Infrastructure.Options.Security;
 using Waggo.Infrastructure.Persistence.Context;
+using Waggo.Infrastructure.Services.Identity;
 using Waggo.Infrastructure.Services.Messaging;
 using Waggo.Infrastructure.Services.Notifications;
 using Waggo.Infrastructure.Services.Payments;
@@ -58,6 +60,12 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
         services.AddSingleton<IPaymentGateway, SimulatedPaymentGateway>();
+
+        // RF-001, RNF-001, RNF-002 (ADR-016): own identity, no external provider.
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
+        services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
 
         services.AddSingleton<IPricingTableProvider, ConfigurationPricingTableProvider>();
         services.AddScoped<IPetRepository, PetRepository>();

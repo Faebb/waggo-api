@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Waggo.Domain.Entities.Identity;
 using Waggo.Domain.Entities.Messaging;
 using Waggo.Domain.Entities.Notifications;
 using Waggo.Domain.Entities.Payments;
@@ -15,6 +16,8 @@ namespace Waggo.Infrastructure.Persistence.Context;
 public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, AesGcmFieldEncryptor encryptor)
     : DbContext(options)
 {
+    public DbSet<User> Users => Set<User>();
+
     public DbSet<Pet> Pets => Set<Pet>();
 
     public DbSet<Walk> Walks => Set<Walk>();
