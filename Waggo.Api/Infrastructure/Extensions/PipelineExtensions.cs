@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
+using Waggo.Api.Endpoints.Identity;
 using Waggo.Api.Endpoints.Messaging;
 using Waggo.Api.Endpoints.Notifications;
 using Waggo.Api.Endpoints.Payments;
@@ -63,6 +64,7 @@ public static class PipelineExtensions
         }
 
         RouteGroupBuilder v1 = app.MapGroup("/api/v1");
+        v1.MapIdentityEndpoints();
         v1.MapPricingEndpoints();
         v1.MapPetsEndpoints();
         v1.MapWalksEndpoints();

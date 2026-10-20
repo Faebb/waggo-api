@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
+using Waggo.Application.Common.Interfaces.Identity;
 
 namespace Waggo.Api.IntegrationTests.Infrastructure;
 
@@ -41,5 +44,10 @@ public sealed class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
         // Every test shares the development user name, so the per-user rate limit must not get in the way.
         builder.UseSetting("RateLimiting:PermitLimit", "10000");
+
+        // RF-001: no real mail provider in tests, so a spy replaces the development sender (ADR-016).
+        builder.ConfigureTestServices(services => services.AddSingleton<IEmailSender, CapturingEmailSender>());
     }
+
+    public CapturingEmailSender Emails => (CapturingEmailSender)Services.GetRequiredService<IEmailSender>();
 }

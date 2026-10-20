@@ -25,6 +25,57 @@ namespace Waggo.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Waggo.Domain.Entities.Identity.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ConfirmationTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmation_token_expires_at");
+
+                    b.Property<string>("ConfirmationTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("confirmation_token_hash");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("email_confirmed");
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_admin");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
+                    b.Property<DateTimeOffset>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("registered_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_users");
+
+                    b.HasIndex("ConfirmationTokenHash")
+                        .HasDatabaseName("ix_users_confirmation_token_hash");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email");
+
+                    b.ToTable("users", "identity");
+                });
+
             modelBuilder.Entity("Waggo.Domain.Entities.Messaging.WalkMessage", b =>
                 {
                     b.Property<Guid>("Id")
