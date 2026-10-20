@@ -1,14 +1,19 @@
 namespace Waggo.Api.Infrastructure.Settings;
 
-/// <summary>OAuth 2.0 authorization server that issues the JWT access tokens.</summary>
+/// <summary>
+/// ADR-016: the API is its own authorization server, so this validates against its own symmetric signing key
+/// instead of an external provider's OIDC metadata (<c>Authority</c>, superseded).
+/// </summary>
 public sealed class JwtSettings
 {
-    /// <summary>Issuer URL of the authorization server, e.g. https://login.example.com/realms/waggo.</summary>
-    public string Authority { get; set; } = string.Empty;
+    /// <summary>32+ random bytes in base64 (<c>openssl rand -base64 32</c>); same value as <c>Waggo.Infrastructure.Options.Identity.JwtOptions.SigningKey</c>.</summary>
+    public string SigningKey { get; set; } = string.Empty;
+
+    public string Issuer { get; set; } = "waggo-api";
 
     /// <summary>Expected <c>aud</c> of the access tokens.</summary>
     public string Audience { get; set; } = "waggo-api";
 
-    /// <summary>Claim that carries the roles (depends on the provider, e.g. "roles").</summary>
+    /// <summary>Claim that carries the roles.</summary>
     public string RoleClaimType { get; set; } = "roles";
 }

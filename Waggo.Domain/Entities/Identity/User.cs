@@ -11,6 +11,10 @@ public sealed class User
 {
     public static readonly TimeSpan ConfirmationTokenLifetime = TimeSpan.FromHours(24);
 
+    public const int MaxFailedLoginAttempts = 5;
+
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     // Used by EF Core to materialize the entity.
     private User()
     {
@@ -33,6 +37,12 @@ public sealed class User
     public DateTimeOffset? ConfirmationTokenExpiresAt { get; private set; }
 
     public DateTimeOffset RegisteredAt { get; private set; }
+
+    public int FailedLoginAttempts { get; private set; }
+
+    public DateTimeOffset? LockedUntil { get; private set; }
+
+    public bool IsLocked(DateTimeOffset now) => LockedUntil > now;
 
     public static WaggoResponse<User> Register(
         string email,
@@ -89,4 +99,18 @@ public sealed class User
         response.Data = this;
         return response;
     }
+
+    /// <summary>A wrong password; locks the account for <see cref="LockoutDuration"/> after too many in a row.</summary>
+    public void RegisterFailedLoginAttempt(DateTimeOffset now)
+    {
+        FailedLoginAttempts++;
+        if (FailedLoginAttempts >= MaxFailedLoginAttempts)
+        {
+            LockedUntil = now.Add(LockoutDuration);
+            FailedLoginAttempts = 0;
+        }
+    }
+
+    /// <summary>The password was right: the slate is clean for the next time it is wrong.</summary>
+    public void ResetFailedLoginAttempts() => FailedLoginAttempts = 0;
 }

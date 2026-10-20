@@ -18,6 +18,10 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
 {
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<LoginChallenge> LoginChallenges => Set<LoginChallenge>();
+
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     public DbSet<Pet> Pets => Set<Pet>();
 
     public DbSet<Walk> Walks => Set<Walk>();

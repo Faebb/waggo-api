@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Waggo.Application.Common.Interfaces.Identity;
@@ -9,7 +10,7 @@ namespace Waggo.Infrastructure.Services.Identity;
 /// storage. A fast hash is correct here (unlike passwords) because the input already has enough entropy to make
 /// brute force infeasible.
 /// </summary>
-internal sealed class SecureTokenGenerator : ITokenGenerator
+public sealed class SecureTokenGenerator : ITokenGenerator
 {
     private const int TokenSizeBytes = 32;
 
@@ -19,6 +20,9 @@ internal sealed class SecureTokenGenerator : ITokenGenerator
         RandomNumberGenerator.Fill(bytes);
         return Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_').TrimEnd('=');
     }
+
+    public string GenerateNumericCode() =>
+        RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
 
     public string Hash(string token)
     {

@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Waggo.Api.Infrastructure.Authentication;
 using Waggo.Api.Infrastructure.Authorization;
@@ -61,8 +62,8 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// OAuth 2.0: the API is a resource server that validates JWT access tokens of any provider.
-    /// Development can use a fake user instead (never in Production).
+    /// ADR-016: the API validates the JWT access tokens it issues itself, with its own symmetric key — not an
+    /// external provider's OIDC metadata. Development can use a fake user instead (never in Production).
     /// </summary>
     private static IServiceCollection AddWaggoAuthentication(
         this IServiceCollection services,
@@ -88,20 +89,25 @@ public static class ServiceCollectionExtensions
             return services;
         }
 
-        if (string.IsNullOrWhiteSpace(settings.Jwt.Authority))
+        if (string.IsNullOrWhiteSpace(settings.Jwt.SigningKey))
         {
             throw new InvalidOperationException(
-                "Authentication:Jwt:Authority is required when the development user is disabled.");
+                "Authentication:Jwt:SigningKey is required when the development user is disabled.");
         }
 
+        byte[] key = Convert.FromBase64String(settings.Jwt.SigningKey);
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                options.Authority = settings.Jwt.Authority;
-                options.Audience = settings.Jwt.Audience;
                 options.MapInboundClaims = false;
-                options.TokenValidationParameters.RoleClaimType = settings.Jwt.RoleClaimType;
-                options.TokenValidationParameters.NameClaimType = "sub";
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidIssuer = settings.Jwt.Issuer,
+                    ValidAudience = settings.Jwt.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    RoleClaimType = settings.Jwt.RoleClaimType,
+                    NameClaimType = "sub",
+                };
             });
 
         return services;

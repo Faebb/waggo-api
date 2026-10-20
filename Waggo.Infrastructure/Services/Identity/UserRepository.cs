@@ -10,6 +10,13 @@ internal sealed class UserRepository(WaggoDbContext db) : IUserRepository
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken) =>
         db.Users.AnyAsync(user => user.Email == email, cancellationToken);
 
+    /// <summary>Tracked: the login flow mutates it (failed attempts, lockout) before saving.</summary>
+    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken) =>
+        db.Users.FirstOrDefaultAsync(user => user.Email == email, cancellationToken);
+
+    public Task<User?> GetAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Users.FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+
     public async Task AddAsync(User user, CancellationToken cancellationToken)
     {
         db.Users.Add(user);
