@@ -181,3 +181,8 @@ dotnet_diagnostic.CA1873.severity = none
 [Tests/**/*.cs]
 # Test names follow Method_Scenario_ExpectedResult, also for async tests (no "Async" suffix)
 dotnet_naming_rule.async_methods_suffix.severity = none
+
+# EF Core migrations are generated code: style rules do not apply.
+[**/Persistence/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none

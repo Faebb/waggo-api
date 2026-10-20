@@ -11,6 +11,7 @@ using Waggo.Api.Infrastructure.Helpers;
 using Waggo.Api.Infrastructure.Responses;
 using Waggo.Api.Infrastructure.Settings;
 using Waggo.Application.Common.Constants;
+using Waggo.Application.Common.Interfaces;
 
 namespace Waggo.Api.Infrastructure.Extensions;
 
@@ -30,8 +31,15 @@ public static class ServiceCollectionExtensions
             .AddWaggoAuthorization()
             .AddWaggoRateLimiting(configuration)
             .AddWaggoRequestValidation()
+            .AddWaggoCurrentUser()
             .AddOpenApi();
     }
+
+    /// <summary>Use cases get the caller through <see cref="ICurrentUser"/>, never from HttpContext.</summary>
+    private static IServiceCollection AddWaggoCurrentUser(this IServiceCollection services) =>
+        services
+            .AddHttpContextAccessor()
+            .AddScoped<ICurrentUser, HttpCurrentUser>();
 
     /// <summary>Serilog is the only provider; code logs through ILogger&lt;T&gt;.</summary>
     private static IServiceCollection AddWaggoLogging(this IServiceCollection services, IConfiguration configuration) =>
