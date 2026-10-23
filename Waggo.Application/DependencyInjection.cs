@@ -4,8 +4,10 @@ using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.Login;
+using Waggo.Application.Identity.Commands.Logout;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
+using Waggo.Application.Identity.Commands.ResendLoginCode;
 using Waggo.Application.Identity.Commands.VerifyLoginCode;
 using Waggo.Application.Messaging;
 using Waggo.Application.Messaging.Commands.SendMessage;
@@ -59,6 +61,8 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<LoginCommand, LoginResponse>, LoginHandler>();
         services.AddScoped<ICommandHandler<VerifyLoginCodeCommand, SessionResponse>, VerifyLoginCodeHandler>();
         services.AddScoped<ICommandHandler<RefreshSessionCommand, SessionResponse>, RefreshSessionHandler>();
+        services.AddScoped<ICommandHandler<ResendLoginCodeCommand, LoginResponse>, ResendLoginCodeHandler>();
+        services.AddScoped<ICommandHandler<LogoutCommand, bool>, LogoutHandler>();
 
         services.AddScoped<IQueryHandler<QuoteFareQuery, FareQuoteResponse>, QuoteFareHandler>();
 

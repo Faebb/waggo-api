@@ -6,8 +6,10 @@ using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.Login;
+using Waggo.Application.Identity.Commands.Logout;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
+using Waggo.Application.Identity.Commands.ResendLoginCode;
 using Waggo.Application.Identity.Commands.VerifyLoginCode;
 using Waggo.Domain.Common;
 
@@ -49,6 +51,16 @@ internal static class IdentityEndpoints
             .WithName("Refresh")
             .WithRequestValidation<RefreshRequest>()
             .Produces<WaggoApiResponse<SessionResponse>>();
+
+        group.MapPost("/resend-code", ResendLoginCodeAsync)
+            .WithName("ResendLoginCode")
+            .WithRequestValidation<ResendLoginCodeRequest>()
+            .Produces<WaggoApiResponse<LoginResponse>>();
+
+        group.MapPost("/logout", LogoutAsync)
+            .WithName("Logout")
+            .WithRequestValidation<LogoutRequest>()
+            .Produces<WaggoApiResponse<bool>>();
 
         return routes;
     }
@@ -105,6 +117,28 @@ internal static class IdentityEndpoints
     {
         WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "Refresh");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ResendLoginCodeAsync(
+        ResendLoginCodeRequest request,
+        ICommandHandler<ResendLoginCodeCommand, LoginResponse> handler,
+        ILogger<ResendLoginCodeRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<LoginResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "ResendLoginCode");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> LogoutAsync(
+        LogoutRequest request,
+        ICommandHandler<LogoutCommand, bool> handler,
+        ILogger<LogoutRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "Logout");
         return response.ToApiResult();
     }
 }

@@ -17,7 +17,8 @@ public sealed class Walk
     public const int MinAddressLength = 5;
     public const int MaxAddressLength = 200;
     public const int MaxNotesLength = 500;
-    public const int MaxDaysAhead = 14;
+    // The payment is held when the walk is requested and a card authorization expires in about 7 days.
+    public const int MaxDaysAhead = 5;
 
     // A request "for now" may reach the server a few seconds late: that small drift is not "in the past".
     private static readonly TimeSpan s_clockTolerance = TimeSpan.FromMinutes(1);

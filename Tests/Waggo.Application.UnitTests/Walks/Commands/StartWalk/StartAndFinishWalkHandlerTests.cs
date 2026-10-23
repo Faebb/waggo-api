@@ -1,6 +1,7 @@
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.Common.Models.Payments;
 using Waggo.Application.UnitTests.TestData;
@@ -26,6 +27,7 @@ public class StartAndFinishWalkHandlerTests
     private readonly IPaymentGateway _gateway = PaymentMother.ApprovingGateway();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
+    private readonly IWalkerProfileRepository _walkerProfiles = WalkerMother.VerifiedRepository("walker-1");
     private readonly Walk _walk = WalkMother.Requested();
 
     public StartAndFinishWalkHandlerTests()
@@ -35,10 +37,11 @@ public class StartAndFinishWalkHandlerTests
         _walks.GetAsync(_walk.Id, Arg.Any<CancellationToken>()).Returns(_walk);
     }
 
-    private StartWalkHandler Start() => new(_walks, _notifications, _currentUser, new FixedTimeProvider());
+    private StartWalkHandler Start() =>
+        new(_walks, _notifications, _walkerProfiles, _currentUser, new FixedTimeProvider());
 
     private FinishWalkHandler Finish() =>
-        new(_walks, _payments, _gateway, _notifications, _currentUser, new FixedTimeProvider());
+        new(_walks, _payments, _gateway, _notifications, _walkerProfiles, _currentUser, new FixedTimeProvider());
 
     [Fact]
     public async Task Start_AssignedWalker_StartsAndSaves()
@@ -47,6 +50,7 @@ public class StartAndFinishWalkHandlerTests
             await Start().HandleAsync(new StartWalkCommand(_walk.Id), CancellationToken.None);
 
         result.Data.Status.ShouldBe("InProgress");
+        result.Data.Walker.ShouldBe(new AssignedWalkerResponse("walker-1", "Andrés Gómez"));
         await _walks.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

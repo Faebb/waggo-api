@@ -11,6 +11,11 @@ public interface IWalkerProfileRepository
 
     Task<WalkerProfile?> GetByUserAsync(string userId, CancellationToken cancellationToken);
 
+    /// <summary>Profiles of the given users that exist, in no particular order.</summary>
+    Task<IReadOnlyList<WalkerProfile>> ListByUsersAsync(
+        IReadOnlyCollection<string> userIds,
+        CancellationToken cancellationToken);
+
     /// <summary>Loads a profile to change it; call <see cref="SaveChangesAsync"/> after.</summary>
     Task<WalkerProfile?> GetAsync(Guid id, CancellationToken cancellationToken);
 

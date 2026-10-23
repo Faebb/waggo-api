@@ -260,6 +260,58 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                     b.ToTable("notifications", "messaging");
                 });
 
+            modelBuilder.Entity("Waggo.Domain.Entities.Payments.PaymentMethod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Brand")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("brand");
+
+                    b.Property<int>("ExpiryMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("expiry_month");
+
+                    b.Property<int>("ExpiryYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("expiry_year");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("LastFour")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character(4)")
+                        .HasColumnName("last_four")
+                        .IsFixedLength();
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("owner_id");
+
+                    b.Property<DateTimeOffset>("RegisteredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("registered_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payment_methods");
+
+                    b.HasIndex("OwnerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payment_methods_owner_default")
+                        .HasFilter("is_default");
+
+                    b.ToTable("payment_methods", "payments");
+                });
+
             modelBuilder.Entity("Waggo.Domain.Entities.Payments.WalkPayment", b =>
                 {
                     b.Property<Guid>("Id")

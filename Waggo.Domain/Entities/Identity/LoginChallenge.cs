@@ -44,6 +44,35 @@ public sealed class LoginChallenge
         };
     }
 
+    /// <summary>
+    /// A new code was sent: the old one stops working and the expiry restarts. Each resend counts as an attempt,
+    /// so resends and wrong codes share the same <see cref="MaxAttempts"/> budget.
+    /// </summary>
+    public WaggoResponse<LoginChallenge> ReplaceCode(string newCodeHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newCodeHash);
+        WaggoResponse<LoginChallenge> response = new();
+
+        if (Used)
+        {
+            response.AddError(IdentityErrors.ChallengeNotFound);
+            return response;
+        }
+
+        Attempts++;
+        if (Attempts >= MaxAttempts)
+        {
+            Used = true;
+            response.AddError(IdentityErrors.TooManyAttempts);
+            return response;
+        }
+
+        CodeHash = newCodeHash;
+        ExpiresAt = now.Add(Lifetime);
+        response.Data = this;
+        return response;
+    }
+
     /// <summary>Checks the code; a wrong one counts as an attempt, exhausting them locks the challenge for good.</summary>
     public WaggoResponse<LoginChallenge> Verify(string codeHash, DateTimeOffset now)
     {

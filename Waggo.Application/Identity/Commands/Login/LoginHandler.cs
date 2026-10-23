@@ -61,8 +61,8 @@ internal sealed class LoginHandler(
         await challenges.AddAsync(challenge, cancellationToken);
         await emailSender.SendAsync(
             user.Email,
-            "Tu código de inicio de sesión en Waggo",
-            $"Tu código de verificación es: {code}",
+            LoginCodeEmail.Subject,
+            LoginCodeEmail.Body(code),
             cancellationToken);
 
         response.Data = new LoginResponse(challenge.Id);

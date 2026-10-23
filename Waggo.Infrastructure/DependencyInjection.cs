@@ -83,6 +83,7 @@ public static class DependencyInjection
         services.AddScoped<IWalkMessageRepository, WalkMessageRepository>();
         services.AddScoped<IWalkerProfileRepository, WalkerProfileRepository>();
         services.AddScoped<IWalkPaymentRepository, WalkPaymentRepository>();
+        services.AddScoped<IPaymentMethodRepository, PaymentMethodRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
 
         services.AddHealthChecks().AddDbContextCheck<WaggoDbContext>("postgres", tags: ["ready"]);

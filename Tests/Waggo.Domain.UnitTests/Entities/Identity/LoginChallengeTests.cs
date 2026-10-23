@@ -62,6 +62,69 @@ public class LoginChallengeTests
     }
 
     [Fact]
+    public void ReplaceCode_ActiveChallenge_InvalidatesTheOldCodeAndRenewsTheExpiry()
+    {
+        LoginChallenge challenge = LoginChallenge.Create(s_userId, "code-hash", s_now);
+        DateTimeOffset later = s_now.AddMinutes(9);
+
+        WaggoResponse<LoginChallenge> result = challenge.ReplaceCode("new-hash", later);
+
+        result.IsValid.ShouldBeTrue();
+        challenge.ExpiresAt.ShouldBe(later.Add(LoginChallenge.Lifetime));
+        challenge.Verify("code-hash", later).Errors.Single().Code.ShouldBe(IdentityErrors.InvalidCode.Code);
+        challenge.Verify("new-hash", later).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ReplaceCode_ExpiredChallenge_IssuesAUsableCode()
+    {
+        LoginChallenge challenge = LoginChallenge.Create(s_userId, "code-hash", s_now);
+        DateTimeOffset afterExpiry = s_now.Add(LoginChallenge.Lifetime).AddMinutes(1);
+
+        WaggoResponse<LoginChallenge> result = challenge.ReplaceCode("new-hash", afterExpiry);
+
+        result.IsValid.ShouldBeTrue();
+        challenge.Verify("new-hash", afterExpiry).IsValid.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ReplaceCode_CountsAsAnAttempt()
+    {
+        LoginChallenge challenge = LoginChallenge.Create(s_userId, "code-hash", s_now);
+
+        challenge.ReplaceCode("new-hash", s_now);
+
+        challenge.Attempts.ShouldBe(1);
+    }
+
+    [Fact]
+    public void ReplaceCode_ExhaustingAttempts_LocksTheChallengeWithTooManyAttempts()
+    {
+        LoginChallenge challenge = LoginChallenge.Create(s_userId, "code-hash", s_now);
+        for (int i = 0; i < LoginChallenge.MaxAttempts - 1; i++)
+        {
+            challenge.Verify("wrong-hash", s_now);
+        }
+
+        WaggoResponse<LoginChallenge> result = challenge.ReplaceCode("new-hash", s_now);
+
+        result.Errors.Single().Code.ShouldBe(IdentityErrors.TooManyAttempts.Code);
+        challenge.Used.ShouldBeTrue();
+        challenge.Verify("new-hash", s_now).Errors.Single().Code.ShouldBe(IdentityErrors.ChallengeNotFound.Code);
+    }
+
+    [Fact]
+    public void ReplaceCode_AlreadyUsed_FailsWithChallengeNotFound()
+    {
+        LoginChallenge challenge = LoginChallenge.Create(s_userId, "code-hash", s_now);
+        challenge.Verify("code-hash", s_now);
+
+        WaggoResponse<LoginChallenge> result = challenge.ReplaceCode("new-hash", s_now);
+
+        result.Errors.Single().Code.ShouldBe(IdentityErrors.ChallengeNotFound.Code);
+    }
+
+    [Fact]
     public void Verify_AlreadyUsed_FailsWithChallengeNotFound()
     {
         LoginChallenge challenge = LoginChallenge.Create(s_userId, "code-hash", s_now);

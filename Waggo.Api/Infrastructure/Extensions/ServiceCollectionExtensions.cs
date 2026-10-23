@@ -148,6 +148,7 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddWaggoAuthorization(this IServiceCollection services)
     {
         services.AddAuthorizationBuilder()
+            .AddPolicy(WaggoPolicies.Authenticated, policy => policy.RequireAuthenticatedUser())
             .AddPolicy(WaggoPolicies.Owner, policy => policy.RequireRole(WaggoRoles.Owner, WaggoRoles.Admin))
             .AddPolicy(WaggoPolicies.Walker, policy => policy.RequireRole(WaggoRoles.Walker, WaggoRoles.Admin))
             .AddPolicy(WaggoPolicies.Admin, policy => policy.RequireRole(WaggoRoles.Admin))

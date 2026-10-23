@@ -60,15 +60,20 @@ public class WalkTests
         Request(scheduledFor: null).Data.ScheduledFor.ShouldBe(s_now);
 
     [Fact]
-    public void Request_ScheduledWithin14Days_KeepsTheSchedule() =>
-        Request(scheduledFor: s_now.AddDays(14)).Data.ScheduledFor.ShouldBe(s_now.AddDays(14));
+    public void Request_ScheduledWithin5Days_KeepsTheSchedule() =>
+        Request(scheduledFor: s_now.AddDays(5)).Data.ScheduledFor.ShouldBe(s_now.AddDays(5));
 
     [Theory]
-    [InlineData(-10)]    // ten minutes ago
-    [InlineData(20_161)] // 14 days and 1 minute ahead
+    [InlineData(-10)]   // ten minutes ago
+    [InlineData(7_201)] // 5 days and 1 minute ahead
+    [InlineData(8_640)] // 6 days ahead: the card authorization could expire before the walk
     public void Request_ScheduleOutOfRange_FailsWithInvalidSchedule(int minutesFromNow) =>
         Request(scheduledFor: s_now.AddMinutes(minutesFromNow))
             .Errors.ShouldContain(e => e.Code == WalkErrors.InvalidSchedule.Code);
+
+    [Fact]
+    public void InvalidSchedule_Message_StatesTheFiveDayHorizon() =>
+        WalkErrors.InvalidSchedule.Message.ShouldBe("Programa el paseo para ahora o para los próximos 5 días.");
 
     [Fact]
     public void Request_NoPets_FailsWithInvalidPets() =>
