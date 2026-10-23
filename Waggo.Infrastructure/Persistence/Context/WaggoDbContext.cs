@@ -34,6 +34,8 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
 
     public DbSet<WalkPayment> WalkPayments => Set<WalkPayment>();
 
+    public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+
     public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

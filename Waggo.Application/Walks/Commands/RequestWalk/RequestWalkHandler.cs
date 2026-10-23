@@ -104,7 +104,7 @@ internal sealed class RequestWalkHandler(
 
         await walks.AddAsync(walk.Data, cancellationToken);
         await payments.AddAsync(WalkPayment.Hold(walk.Data, hold.Data, timeProvider.GetUtcNow()), cancellationToken);
-        response.Data = WalkResponse.From(walk.Data);
+        response.Data = WalkResponse.From(walk.Data, walkerProfile: null); // nobody accepted it yet
         return response;
     }
 }

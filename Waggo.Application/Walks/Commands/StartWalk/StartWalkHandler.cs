@@ -1,5 +1,7 @@
+using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Notifications;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Notifications;
@@ -15,6 +17,7 @@ namespace Waggo.Application.Walks.Commands.StartWalk;
 internal sealed class StartWalkHandler(
     IWalkRepository walks,
     INotificationRepository notifications,
+    IWalkerProfileRepository walkerProfiles,
     ICurrentUser currentUser,
     TimeProvider timeProvider)
     : ICommandHandler<StartWalkCommand, WalkResponse>
@@ -45,7 +48,7 @@ internal sealed class StartWalkHandler(
         await notifications.AddRangeAsync(
             [Notification.ForWalk(walk, WalkParty.Owner, NotificationKind.WalkStarted, now)],
             cancellationToken);
-        response.Data = WalkResponse.From(walk);
+        response.Data = await walkerProfiles.ToWalkResponseAsync(walk, cancellationToken);
         return response;
     }
 }

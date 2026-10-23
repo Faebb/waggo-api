@@ -40,6 +40,7 @@ public class AcceptWalkHandlerTests
             await _sut.HandleAsync(new AcceptWalkCommand(walk.Id), CancellationToken.None);
 
         (result.Data.Status, result.Data.WalkerId).ShouldBe(("Accepted", "walker-1"));
+        result.Data.Walker.ShouldBe(new AssignedWalkerResponse("walker-1", "Andrés Gómez"));
         await _walks.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

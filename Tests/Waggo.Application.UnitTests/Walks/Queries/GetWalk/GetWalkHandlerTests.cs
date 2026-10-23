@@ -1,4 +1,5 @@
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.Walks;
@@ -13,12 +14,13 @@ public class GetWalkHandlerTests
 {
     private readonly IWalkRepository _walks = Substitute.For<IWalkRepository>();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
+    private readonly IWalkerProfileRepository _walkerProfiles = WalkerMother.VerifiedRepository("walker-1");
     private readonly GetWalkHandler _sut;
 
     public GetWalkHandlerTests()
     {
         _currentUser.Id.Returns("owner-1");
-        _sut = new GetWalkHandler(_walks, _currentUser);
+        _sut = new GetWalkHandler(_walks, _walkerProfiles, _currentUser);
     }
 
     [Fact]
@@ -29,7 +31,42 @@ public class GetWalkHandlerTests
 
         WaggoResponse<WalkResponse> result = await _sut.HandleAsync(new GetWalkQuery(walk.Id), CancellationToken.None);
 
-        result.Data.ShouldBe(WalkResponse.From(walk));
+        result.Data.ShouldBe(WalkResponse.From(walk, walkerProfile: null));
+    }
+
+    [Fact]
+    public async Task HandleAsync_OwnWalkWithoutWalker_ReturnsWalkerNull()
+    {
+        Walk walk = WalkMother.Requested();
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        WaggoResponse<WalkResponse> result = await _sut.HandleAsync(new GetWalkQuery(walk.Id), CancellationToken.None);
+
+        result.Data.Walker.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsync_OwnAcceptedWalk_ReturnsTheAssignedWalker()
+    {
+        Walk walk = WalkMother.Requested();
+        walk.Accept("walker-1", DateTimeOffset.UtcNow);
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        WaggoResponse<WalkResponse> result = await _sut.HandleAsync(new GetWalkQuery(walk.Id), CancellationToken.None);
+
+        result.Data.Walker.ShouldBe(new AssignedWalkerResponse("walker-1", "Andrés Gómez"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_WalkerWithoutProfile_ReturnsTheWalkerIdWithoutName()
+    {
+        Walk walk = WalkMother.Requested();
+        walk.Accept("walker-legacy", DateTimeOffset.UtcNow);
+        _walks.GetAsync(walk.Id, Arg.Any<CancellationToken>()).Returns(walk);
+
+        WaggoResponse<WalkResponse> result = await _sut.HandleAsync(new GetWalkQuery(walk.Id), CancellationToken.None);
+
+        result.Data.Walker.ShouldBe(new AssignedWalkerResponse("walker-legacy", FullName: null));
     }
 
     [Fact]
@@ -52,6 +89,7 @@ public class GetWalkHandlerTests
 
         await Should.ThrowAsync<NotFoundException>(
             () => _sut.HandleAsync(new GetWalkQuery(foreign.Id), CancellationToken.None));
+        await _walkerProfiles.DidNotReceiveWithAnyArgs().GetByUserAsync(default!, default);
     }
 
     [Fact]

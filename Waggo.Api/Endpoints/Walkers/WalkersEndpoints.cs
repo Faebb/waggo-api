@@ -15,14 +15,17 @@ using Waggo.Domain.Enums.Walkers;
 
 namespace Waggo.Api.Endpoints.Walkers;
 
-/// <summary>RF-002: walkers register their profile. RF-003: admins verify them (until a provider is chosen).</summary>
+/// <summary>
+/// RF-002: any signed-in user registers their walker profile (the walker role only exists once approved, so it
+/// cannot be required here). RF-003: admins verify them (until a provider is chosen).
+/// </summary>
 internal static class WalkersEndpoints
 {
     public static IEndpointRouteBuilder MapWalkersEndpoints(this IEndpointRouteBuilder routes)
     {
         RouteGroupBuilder me = routes.MapGroup("/walkers/me")
             .WithTags("Walkers")
-            .RequireAuthorization(WaggoPolicies.Walker);
+            .RequireAuthorization(WaggoPolicies.Authenticated);
 
         me.MapPost("/", RegisterAsync)
             .WithName("RegisterWalker")

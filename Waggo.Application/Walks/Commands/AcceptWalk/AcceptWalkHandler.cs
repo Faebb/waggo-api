@@ -1,3 +1,4 @@
+using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Walkers;
@@ -48,7 +49,7 @@ internal sealed class AcceptWalkHandler(
         await notifications.AddRangeAsync(
             [Notification.ForWalk(walk, WalkParty.Owner, NotificationKind.WalkAccepted, now)],
             cancellationToken);
-        response.Data = WalkResponse.From(walk);
+        response.Data = await walkerProfiles.ToWalkResponseAsync(walk, cancellationToken);
         return response;
     }
 }
