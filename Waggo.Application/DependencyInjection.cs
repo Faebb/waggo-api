@@ -6,6 +6,8 @@ using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.Login;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
+using Waggo.Application.Identity.Commands.UpdateMyProfile;
+using Waggo.Application.Identity.Queries.GetMyProfile;
 using Waggo.Application.Messaging;
 using Waggo.Application.Messaging.Commands.SendMessage;
 using Waggo.Application.Messaging.Queries.ListMessages;
@@ -57,6 +59,8 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<ConfirmEmailCommand, bool>, ConfirmEmailHandler>();
         services.AddScoped<ICommandHandler<LoginCommand, SessionResponse>, LoginHandler>();
         services.AddScoped<ICommandHandler<RefreshSessionCommand, SessionResponse>, RefreshSessionHandler>();
+        services.AddScoped<IQueryHandler<GetMyProfileQuery, UserProfileResponse>, GetMyProfileHandler>();
+        services.AddScoped<ICommandHandler<UpdateMyProfileCommand, UserProfileResponse>, UpdateMyProfileHandler>();
 
         services.AddScoped<IQueryHandler<QuoteFareQuery, FareQuoteResponse>, QuoteFareHandler>();
 

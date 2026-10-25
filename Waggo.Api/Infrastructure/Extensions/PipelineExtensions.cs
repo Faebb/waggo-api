@@ -67,6 +67,7 @@ public static class PipelineExtensions
 
         RouteGroupBuilder v1 = app.MapGroup("/api/v1");
         v1.MapIdentityEndpoints();
+        v1.MapUsersEndpoints();
         v1.MapPricingEndpoints();
         v1.MapPetsEndpoints();
         v1.MapWalksEndpoints();

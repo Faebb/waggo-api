@@ -15,6 +15,10 @@ public sealed class User
 
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
+    public const int MaxFullNameLength = 100;
+
+    public const int MaxPhoneLength = 20;
+
     // Used by EF Core to materialize the entity.
     private User()
     {
@@ -37,6 +41,12 @@ public sealed class User
     public DateTimeOffset? ConfirmationTokenExpiresAt { get; private set; }
 
     public DateTimeOffset RegisteredAt { get; private set; }
+
+    /// <summary>Optional, shown on the owner/walker's profile. Unset for a brand-new account.</summary>
+    public string? FullName { get; private set; }
+
+    /// <summary>Optional, shown on the owner/walker's profile. Unset for a brand-new account.</summary>
+    public string? Phone { get; private set; }
 
     public int FailedLoginAttempts { get; private set; }
 
@@ -133,4 +143,11 @@ public sealed class User
 
     /// <summary>The password was right: the slate is clean for the next time it is wrong.</summary>
     public void ResetFailedLoginAttempts() => FailedLoginAttempts = 0;
+
+    /// <summary>Replaces the editable part of the profile; a null clears that field.</summary>
+    public void UpdateProfile(string? fullName, string? phone)
+    {
+        FullName = fullName;
+        Phone = phone;
+    }
 }

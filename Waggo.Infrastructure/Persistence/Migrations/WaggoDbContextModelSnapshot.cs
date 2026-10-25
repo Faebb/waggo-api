@@ -95,6 +95,11 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("failed_login_attempts");
 
+                    b.Property<string>("FullName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("full_name");
+
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean")
                         .HasColumnName("is_admin");
@@ -107,6 +112,11 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone");
 
                     b.Property<DateTimeOffset>("RegisteredAt")
                         .HasColumnType("timestamp with time zone")
