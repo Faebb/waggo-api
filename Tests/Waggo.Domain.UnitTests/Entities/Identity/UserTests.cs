@@ -69,6 +69,28 @@ public class UserTests
     }
 
     [Fact]
+    public void Seed_AnyEmail_CreatesAnAlreadyConfirmedAccountWithoutAConfirmationToken()
+    {
+        User user = User.Seed("Admin@Mail.com", "hashed-password", isAdmin: true, s_now);
+
+        user.Email.ShouldBe("admin@mail.com");
+        user.PasswordHash.ShouldBe("hashed-password");
+        user.EmailConfirmed.ShouldBeTrue();
+        user.ConfirmationTokenHash.ShouldBeNull();
+        user.ConfirmationTokenExpiresAt.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Seed_IsAdminFlag_IsStoredAsGiven(bool isAdmin)
+    {
+        User user = User.Seed("ana@mail.com", "hashed-password", isAdmin, s_now);
+
+        user.IsAdmin.ShouldBe(isAdmin);
+    }
+
+    [Fact]
     public void RegisterFailedLoginAttempt_BelowTheMax_JustCounts()
     {
         User user = User.Register("ana@mail.com", "hash", "token-hash", s_now).Data;

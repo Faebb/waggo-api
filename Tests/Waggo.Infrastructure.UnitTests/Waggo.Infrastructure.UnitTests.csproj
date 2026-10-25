@@ -5,6 +5,7 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Shouldly" />
+    <PackageReference Include="NSubstitute" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Waggo.Infrastructure\Waggo.Infrastructure.csproj" />
@@ -12,5 +13,6 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="Shouldly" />
+    <Using Include="NSubstitute" />
   </ItemGroup>
 </Project>
