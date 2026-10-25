@@ -75,6 +75,26 @@ public sealed class User
         return response;
     }
 
+    /// <summary>
+    /// A provisioned account that skips the confirmation email: for seeding a known admin in Development/Testing,
+    /// never for the RF-001 self-registration flow (<see cref="Register"/>).
+    /// </summary>
+    public static User Seed(string email, string passwordHash, bool isAdmin, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(passwordHash);
+
+        return new User
+        {
+            Id = Guid.CreateVersion7(now),
+            Email = email.Trim().ToLowerInvariant(),
+            PasswordHash = passwordHash,
+            EmailConfirmed = true,
+            IsAdmin = isAdmin,
+            RegisteredAt = now,
+        };
+    }
+
     /// <summary>Activates the account once the owner of the inbox proves it by presenting the token.</summary>
     public WaggoResponse<User> Confirm(string tokenHash, DateTimeOffset now)
     {
