@@ -68,7 +68,6 @@ public static class DependencyInjection
             .ValidateDataAnnotations()
             .ValidateOnStart();
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<ILoginChallengeRepository, LoginChallengeRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();

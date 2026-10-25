@@ -26,12 +26,7 @@ public class JwtPipelineTests(JwtPipelineWaggoApiFactory factory)
 
         HttpResponseMessage login = await client.PostAsJsonAsync(
             new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = "Clave123!" });
-        Guid challengeId = (await login.Content.ReadFromJsonAsync<WaggoApiResponse<LoginResponse>>())!.Data!.ChallengeId;
-        string code = ExtractCode(factory.Emails.LastBodySentTo(email));
-
-        HttpResponseMessage verify = await client.PostAsJsonAsync(
-            new Uri("/api/v1/auth/login/verify", UriKind.Relative), new { challengeId, code });
-        return (await verify.Content.ReadFromJsonAsync<WaggoApiResponse<SessionResponse>>())!.Data!.AccessToken;
+        return (await login.Content.ReadFromJsonAsync<WaggoApiResponse<SessionResponse>>())!.Data!.AccessToken;
     }
 
     [Fact]
