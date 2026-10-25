@@ -12,6 +12,8 @@ using Waggo.Api.Endpoints.Walks;
 using Waggo.Api.Infrastructure.Errors;
 using Waggo.Api.Infrastructure.Middleware;
 using Waggo.Infrastructure;
+using Waggo.Infrastructure.Options.Identity;
+using Waggo.Infrastructure.Services.Identity;
 
 namespace Waggo.Api.Infrastructure.Extensions;
 
@@ -88,6 +90,23 @@ public static class PipelineExtensions
         if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
         {
             await app.Services.MigrateDatabaseAsync(app.Lifetime.ApplicationStopping);
+        }
+    }
+
+    /// <summary>
+    /// Development and Testing only: seeds the admin account from "Seed:Admin" (<see cref="AdminSeedOptions"/>), so
+    /// real sign-in flows (register/login/2FA) can be exercised with every role instead of the development-user
+    /// bypass. A missing configuration value means no admin is seeded.
+    /// </summary>
+    public static async Task SeedAdminUserIfLocalAsync(this WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+        {
+            await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+            AdminUserSeeder seeder = scope.ServiceProvider.GetRequiredService<AdminUserSeeder>();
+            await seeder.SeedAsync(app.Lifetime.ApplicationStopping);
         }
     }
 }

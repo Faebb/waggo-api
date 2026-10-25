@@ -75,6 +75,10 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
 
+        // Development/Testing only: a real admin to sign in with instead of the dev-user bypass (ADR-011).
+        services.AddOptions<AdminSeedOptions>().Bind(configuration.GetSection(AdminSeedOptions.SectionName));
+        services.AddScoped<AdminUserSeeder>();
+
         services.AddSingleton<IPricingTableProvider, ConfigurationPricingTableProvider>();
         services.AddScoped<IPetRepository, PetRepository>();
         services.AddScoped<IWalkRepository, WalkRepository>();

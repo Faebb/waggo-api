@@ -14,6 +14,7 @@ WebApplication app = builder.Build();
 app.UseWaggoPipeline();
 app.MapWaggoEndpoints();
 await app.MigrateDatabaseIfLocalAsync();
+await app.SeedAdminUserIfLocalAsync();
 
 await app.RunAsync();
 
