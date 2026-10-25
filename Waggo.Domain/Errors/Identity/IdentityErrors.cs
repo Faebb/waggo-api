@@ -46,4 +46,12 @@ public static class IdentityErrors
         "Identity.RefreshTokenInvalid",
         "Tu sesión expiró, inicia sesión de nuevo.",
         ErrorType.Unauthorized);
+
+    public static readonly Error InvalidFullName = new(
+        "Identity.InvalidFullName",
+        "El nombre es muy largo.");
+
+    public static readonly Error InvalidPhone = new(
+        "Identity.InvalidPhone",
+        "El celular es muy largo.");
 }

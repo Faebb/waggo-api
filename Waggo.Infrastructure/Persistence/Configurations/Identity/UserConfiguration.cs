@@ -28,5 +28,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(user => user.ConfirmationTokenHash);
 
         builder.Property(user => user.RegisteredAt).IsRequired();
+
+        builder.Property(user => user.FullName).HasMaxLength(User.MaxFullNameLength);
+        builder.Property(user => user.Phone).HasMaxLength(User.MaxPhoneLength);
     }
 }

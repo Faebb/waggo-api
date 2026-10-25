@@ -24,6 +24,38 @@ public class UserTests
     }
 
     [Fact]
+    public void Register_ValidEmail_StartsWithNoFullNameOrPhone()
+    {
+        WaggoResponse<User> result = User.Register("ana@mail.com", "hashed-password", "token-hash", s_now);
+
+        result.Data.FullName.ShouldBeNull();
+        result.Data.Phone.ShouldBeNull();
+    }
+
+    [Fact]
+    public void UpdateProfile_FullNameAndPhone_SetsBoth()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "token-hash", s_now).Data;
+
+        user.UpdateProfile("Ana Pérez", "3001234567");
+
+        user.FullName.ShouldBe("Ana Pérez");
+        user.Phone.ShouldBe("3001234567");
+    }
+
+    [Fact]
+    public void UpdateProfile_NullValues_ClearsBoth()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "token-hash", s_now).Data;
+        user.UpdateProfile("Ana Pérez", "3001234567");
+
+        user.UpdateProfile(null, null);
+
+        user.FullName.ShouldBeNull();
+        user.Phone.ShouldBeNull();
+    }
+
+    [Fact]
     public void Register_EmptyEmail_FailsWithInvalidEmail()
     {
         WaggoResponse<User> result = User.Register("   ", "hashed-password", "token-hash", s_now);
