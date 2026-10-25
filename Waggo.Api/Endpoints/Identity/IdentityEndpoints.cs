@@ -8,7 +8,6 @@ using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.Login;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
-using Waggo.Application.Identity.Commands.VerifyLoginCode;
 using Waggo.Domain.Common;
 
 namespace Waggo.Api.Endpoints.Identity;
@@ -38,11 +37,6 @@ internal static class IdentityEndpoints
         group.MapPost("/login", LoginAsync)
             .WithName("Login")
             .WithRequestValidation<LoginRequest>()
-            .Produces<WaggoApiResponse<LoginResponse>>();
-
-        group.MapPost("/login/verify", VerifyLoginCodeAsync)
-            .WithName("VerifyLoginCode")
-            .WithRequestValidation<VerifyLoginCodeRequest>()
             .Produces<WaggoApiResponse<SessionResponse>>();
 
         group.MapPost("/refresh", RefreshAsync)
@@ -77,23 +71,12 @@ internal static class IdentityEndpoints
 
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
-        ICommandHandler<LoginCommand, LoginResponse> handler,
+        ICommandHandler<LoginCommand, SessionResponse> handler,
         ILogger<LoginRequest> logger,
         CancellationToken cancellationToken)
     {
-        WaggoResponse<LoginResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
-        response.WriteLogs(logger, "Login");
-        return response.ToApiResult();
-    }
-
-    private static async Task<IResult> VerifyLoginCodeAsync(
-        VerifyLoginCodeRequest request,
-        ICommandHandler<VerifyLoginCodeCommand, SessionResponse> handler,
-        ILogger<VerifyLoginCodeRequest> logger,
-        CancellationToken cancellationToken)
-    {
         WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
-        response.WriteLogs(logger, "VerifyLoginCode");
+        response.WriteLogs(logger, "Login");
         return response.ToApiResult();
     }
 

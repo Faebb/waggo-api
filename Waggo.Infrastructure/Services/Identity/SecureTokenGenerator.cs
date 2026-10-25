@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Waggo.Application.Common.Interfaces.Identity;
@@ -6,9 +5,9 @@ using Waggo.Application.Common.Interfaces.Identity;
 namespace Waggo.Infrastructure.Services.Identity;
 
 /// <summary>
-/// Opaque tokens for confirmation links and (later) refresh tokens: 32 random bytes, hashed with SHA-256 before
-/// storage. A fast hash is correct here (unlike passwords) because the input already has enough entropy to make
-/// brute force infeasible.
+/// Opaque tokens for confirmation links and refresh tokens: 32 random bytes, hashed with SHA-256 before storage.
+/// A fast hash is correct here (unlike passwords) because the input already has enough entropy to make brute
+/// force infeasible.
 /// </summary>
 public sealed class SecureTokenGenerator : ITokenGenerator
 {
@@ -20,9 +19,6 @@ public sealed class SecureTokenGenerator : ITokenGenerator
         RandomNumberGenerator.Fill(bytes);
         return Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_').TrimEnd('=');
     }
-
-    public string GenerateNumericCode() =>
-        RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6", CultureInfo.InvariantCulture);
 
     public string Hash(string token)
     {

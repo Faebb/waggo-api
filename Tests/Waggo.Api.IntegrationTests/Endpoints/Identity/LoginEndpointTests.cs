@@ -6,42 +6,31 @@ using Waggo.Application.Identity;
 
 namespace Waggo.Api.IntegrationTests.Endpoints.Identity;
 
-/// <summary>Acceptance tests for RF-005: password + email code, then a rotating session.</summary>
+/// <summary>Acceptance tests for RF-005: password issues a session directly (ADR-017, no 2FA).</summary>
 [Collection(ApiCollectionDefinition.Name)]
 public class LoginEndpointTests(WaggoApiFactory factory)
 {
     private static readonly Uri s_register = new("/api/v1/auth/register", UriKind.Relative);
     private static readonly Uri s_login = new("/api/v1/auth/login", UriKind.Relative);
-    private static readonly Uri s_verify = new("/api/v1/auth/login/verify", UriKind.Relative);
     private static readonly Uri s_refresh = new("/api/v1/auth/refresh", UriKind.Relative);
 
-    private async Task<string> RegisterAndConfirmAsync(HttpClient client, string email)
+    private async Task RegisterAndConfirmAsync(HttpClient client, string email)
     {
         await client.PostAsJsonAsync(s_register, new { email, password = "Clave123!" });
         string token = ExtractCode(factory.Emails.LastBodySentTo(email));
         await client.GetAsync(new Uri($"/api/v1/auth/confirm?token={token}", UriKind.Relative));
-        return email;
-    }
-
-    private static async Task<Guid> LoginAsync(HttpClient client, string email, string password = "Clave123!")
-    {
-        HttpResponseMessage response = await client.PostAsJsonAsync(s_login, new { email, password });
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        return (await response.Content.ReadFromJsonAsync<WaggoApiResponse<LoginResponse>>())!.Data!.ChallengeId;
     }
 
     private static string ExtractCode(string emailBody) => emailBody.Split(": ")[^1];
 
     [Fact]
-    public async Task FullFlow_RegisterConfirmLoginVerify_IssuesASession()
+    public async Task FullFlow_RegisterConfirmLogin_IssuesASession()
     {
         using HttpClient client = factory.CreateClient();
         string email = $"ana-{Guid.NewGuid():N}@mail.com";
         await RegisterAndConfirmAsync(client, email);
-        Guid challengeId = await LoginAsync(client, email);
-        string code = ExtractCode(factory.Emails.LastBodySentTo(email));
 
-        HttpResponseMessage response = await client.PostAsJsonAsync(s_verify, new { challengeId, code });
+        HttpResponseMessage response = await client.PostAsJsonAsync(s_login, new { email, password = "Clave123!" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         SessionResponse session = (await response.Content.ReadFromJsonAsync<WaggoApiResponse<SessionResponse>>())!.Data!;
@@ -80,30 +69,12 @@ public class LoginEndpointTests(WaggoApiFactory factory)
     }
 
     [Fact]
-    public async Task VerifyLoginCode_WrongCode_Returns400WithInvalidCode()
-    {
-        using HttpClient client = factory.CreateClient();
-        string email = $"ana-{Guid.NewGuid():N}@mail.com";
-        await RegisterAndConfirmAsync(client, email);
-        Guid challengeId = await LoginAsync(client, email);
-
-        HttpResponseMessage response =
-            await client.PostAsJsonAsync(s_verify, new { challengeId, code = "000000" });
-
-        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>())!
-            .Errors.Single().Code.ShouldBe("Identity.InvalidCode");
-    }
-
-    [Fact]
     public async Task Refresh_ValidToken_RotatesItAndIssuesANewSession()
     {
         using HttpClient client = factory.CreateClient();
         string email = $"ana-{Guid.NewGuid():N}@mail.com";
         await RegisterAndConfirmAsync(client, email);
-        Guid challengeId = await LoginAsync(client, email);
-        string code = ExtractCode(factory.Emails.LastBodySentTo(email));
-        SessionResponse first = (await (await client.PostAsJsonAsync(s_verify, new { challengeId, code }))
+        SessionResponse first = (await (await client.PostAsJsonAsync(s_login, new { email, password = "Clave123!" }))
             .Content.ReadFromJsonAsync<WaggoApiResponse<SessionResponse>>())!.Data!;
 
         HttpResponseMessage response = await client.PostAsJsonAsync(s_refresh, new { refreshToken = first.RefreshToken });
@@ -120,9 +91,7 @@ public class LoginEndpointTests(WaggoApiFactory factory)
         using HttpClient client = factory.CreateClient();
         string email = $"ana-{Guid.NewGuid():N}@mail.com";
         await RegisterAndConfirmAsync(client, email);
-        Guid challengeId = await LoginAsync(client, email);
-        string code = ExtractCode(factory.Emails.LastBodySentTo(email));
-        SessionResponse first = (await (await client.PostAsJsonAsync(s_verify, new { challengeId, code }))
+        SessionResponse first = (await (await client.PostAsJsonAsync(s_login, new { email, password = "Clave123!" }))
             .Content.ReadFromJsonAsync<WaggoApiResponse<SessionResponse>>())!.Data!;
         SessionResponse second = (await (await client.PostAsJsonAsync(s_refresh, new { refreshToken = first.RefreshToken }))
             .Content.ReadFromJsonAsync<WaggoApiResponse<SessionResponse>>())!.Data!;

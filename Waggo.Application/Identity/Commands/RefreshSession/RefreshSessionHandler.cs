@@ -1,7 +1,6 @@
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Identity;
 using Waggo.Application.Common.Interfaces.Walkers;
-using Waggo.Application.Identity.Commands.VerifyLoginCode;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Identity;
 using Waggo.Domain.Errors.Identity;
@@ -52,7 +51,7 @@ internal sealed class RefreshSessionHandler(
             return response;
         }
 
-        (SessionResponse session, Guid newRefreshTokenId) = await VerifyLoginCodeHandler.IssueSessionAsync(
+        (SessionResponse session, Guid newRefreshTokenId) = await SessionIssuer.IssueSessionAsync(
             user, walkerProfiles, refreshTokens, tokenGenerator, tokenService, now, cancellationToken);
 
         response.ConcatStacks(existing.Rotate(newRefreshTokenId, now));

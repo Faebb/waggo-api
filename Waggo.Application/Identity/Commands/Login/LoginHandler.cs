@@ -1,5 +1,6 @@
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Identity;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Identity;
 using Waggo.Domain.Errors.Identity;
@@ -7,22 +8,24 @@ using Waggo.Domain.Errors.Identity;
 namespace Waggo.Application.Identity.Commands.Login;
 
 /// <summary>
-/// RF-005, step 1: a right password does not grant a session yet — it only raises the second factor (a code
-/// emailed to the account). Wrong attempts are counted and lock the account for a while (RNF-002 brute force).
+/// RF-005: a right password and a confirmed account issue a session right away (ADR-017 — no second factor; a
+/// Google/Microsoft account brings its own). Wrong attempts are counted and lock the account for a while
+/// (RNF-002 brute force).
 /// </summary>
 internal sealed class LoginHandler(
     IUserRepository users,
-    ILoginChallengeRepository challenges,
+    IWalkerProfileRepository walkerProfiles,
+    IRefreshTokenRepository refreshTokens,
     IPasswordHasher passwordHasher,
     ITokenGenerator tokenGenerator,
-    IEmailSender emailSender,
+    ITokenService tokenService,
     TimeProvider timeProvider)
-    : ICommandHandler<LoginCommand, LoginResponse>
+    : ICommandHandler<LoginCommand, SessionResponse>
 {
-    public async Task<WaggoResponse<LoginResponse>> HandleAsync(LoginCommand command, CancellationToken cancellationToken)
+    public async Task<WaggoResponse<SessionResponse>> HandleAsync(LoginCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        WaggoResponse<LoginResponse> response = new();
+        WaggoResponse<SessionResponse> response = new();
         DateTimeOffset now = timeProvider.GetUtcNow();
 
         string normalizedEmail = command.Email?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -56,16 +59,9 @@ internal sealed class LoginHandler(
         user.ResetFailedLoginAttempts();
         await users.SaveChangesAsync(cancellationToken);
 
-        string code = tokenGenerator.GenerateNumericCode();
-        LoginChallenge challenge = LoginChallenge.Create(user.Id, tokenGenerator.Hash(code), now);
-        await challenges.AddAsync(challenge, cancellationToken);
-        await emailSender.SendAsync(
-            user.Email,
-            "Tu código de inicio de sesión en Waggo",
-            $"Tu código de verificación es: {code}",
-            cancellationToken);
-
-        response.Data = new LoginResponse(challenge.Id);
+        (SessionResponse session, _) = await SessionIssuer.IssueSessionAsync(
+            user, walkerProfiles, refreshTokens, tokenGenerator, tokenService, now, cancellationToken);
+        response.Data = session;
         return response;
     }
 }
