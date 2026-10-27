@@ -5,10 +5,12 @@ using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
+using Waggo.Application.Identity.Commands.ForgotPassword;
 using Waggo.Application.Identity.Commands.Login;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
 using Waggo.Application.Identity.Commands.ResendConfirmation;
+using Waggo.Application.Identity.Commands.ResetPassword;
 using Waggo.Domain.Common;
 
 namespace Waggo.Api.Endpoints.Identity;
@@ -49,6 +51,16 @@ internal static class IdentityEndpoints
             .WithName("Refresh")
             .WithRequestValidation<RefreshRequest>()
             .Produces<WaggoApiResponse<SessionResponse>>();
+
+        group.MapPost("/forgot-password", ForgotPasswordAsync)
+            .WithName("ForgotPassword")
+            .WithRequestValidation<ForgotPasswordRequest>()
+            .Produces<WaggoApiResponse<bool>>();
+
+        group.MapPost("/reset-password", ResetPasswordAsync)
+            .WithName("ResetPassword")
+            .WithRequestValidation<ResetPasswordRequest>()
+            .Produces<WaggoApiResponse<bool>>();
 
         return routes;
     }
@@ -105,6 +117,28 @@ internal static class IdentityEndpoints
     {
         WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "Refresh");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ForgotPasswordAsync(
+        ForgotPasswordRequest request,
+        ICommandHandler<ForgotPasswordCommand, bool> handler,
+        ILogger<ForgotPasswordRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "ForgotPassword");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ResetPasswordAsync(
+        ResetPasswordRequest request,
+        ICommandHandler<ResetPasswordCommand, bool> handler,
+        ILogger<ResetPasswordRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "ResetPassword");
         return response.ToApiResult();
     }
 }

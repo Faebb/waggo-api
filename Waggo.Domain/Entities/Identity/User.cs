@@ -18,6 +18,15 @@ public sealed class User
     /// <summary>Minimum time between two confirmation emails to the same account.</summary>
     public static readonly TimeSpan ConfirmationResendCooldown = TimeSpan.FromSeconds(60);
 
+    /// <summary>How long the 6-digit code to recover a forgotten password works.</summary>
+    public static readonly TimeSpan PasswordResetCodeLifetime = TimeSpan.FromMinutes(15);
+
+    /// <summary>Wrong recovery codes allowed before the code is burned and a new one must be requested.</summary>
+    public const int MaxPasswordResetAttempts = 5;
+
+    /// <summary>Minimum time between two recovery emails to the same account.</summary>
+    public static readonly TimeSpan PasswordResetResendCooldown = TimeSpan.FromSeconds(60);
+
     public const int MaxFailedLoginAttempts = 5;
 
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
@@ -49,6 +58,14 @@ public sealed class User
 
     /// <summary>Wrong codes typed for the current confirmation code; reset when a new one is issued.</summary>
     public int ConfirmationAttempts { get; private set; }
+
+    /// <summary>Hash of the 6-digit password recovery code; never the raw code. Cleared once used.</summary>
+    public string? PasswordResetCodeHash { get; private set; }
+
+    public DateTimeOffset? PasswordResetCodeExpiresAt { get; private set; }
+
+    /// <summary>Wrong codes typed for the current recovery code; reset when a new one is issued.</summary>
+    public int PasswordResetAttempts { get; private set; }
 
     public DateTimeOffset RegisteredAt { get; private set; }
 
@@ -180,6 +197,78 @@ public sealed class User
         ConfirmationTokenExpiresAt = now.Add(ConfirmationTokenLifetime);
         ConfirmationAttempts = 0;
         return true;
+    }
+
+    /// <summary>
+    /// Replaces the pending recovery code with a new one. Refused, changing nothing, when the account is not
+    /// confirmed (the inbox is not proven yet) or the last code was sent less than
+    /// <see cref="PasswordResetResendCooldown"/> ago.
+    /// </summary>
+    public bool TryIssuePasswordResetCode(string codeHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
+
+        if (!EmailConfirmed)
+        {
+            return false;
+        }
+
+        if (PasswordResetCodeExpiresAt is DateTimeOffset expiresAt
+            && now < expiresAt - PasswordResetCodeLifetime + PasswordResetResendCooldown)
+        {
+            return false;
+        }
+
+        PasswordResetCodeHash = codeHash;
+        PasswordResetCodeExpiresAt = now.Add(PasswordResetCodeLifetime);
+        PasswordResetAttempts = 0;
+        return true;
+    }
+
+    /// <summary>
+    /// Sets the new password once the owner of the inbox presents the recovery code (its hash). A wrong code counts
+    /// an attempt: after <see cref="MaxPasswordResetAttempts"/> even the right one is refused until a new code is
+    /// issued. Whoever controls the inbox is the owner again, so the lockout from failed logins is lifted too.
+    /// </summary>
+    public WaggoResponse<User> ResetPassword(string codeHash, string newPasswordHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
+        ArgumentException.ThrowIfNullOrWhiteSpace(newPasswordHash);
+        WaggoResponse<User> response = new();
+
+        if (PasswordResetCodeHash is null)
+        {
+            response.AddError(IdentityErrors.ResetCodeInvalid);
+            return response;
+        }
+
+        if (now > PasswordResetCodeExpiresAt)
+        {
+            response.AddError(IdentityErrors.ResetCodeExpired);
+            return response;
+        }
+
+        if (PasswordResetAttempts >= MaxPasswordResetAttempts)
+        {
+            response.AddError(IdentityErrors.ResetAttemptsExceeded);
+            return response;
+        }
+
+        if (PasswordResetCodeHash != codeHash)
+        {
+            PasswordResetAttempts++;
+            response.AddError(IdentityErrors.ResetCodeInvalid);
+            return response;
+        }
+
+        PasswordHash = newPasswordHash;
+        PasswordResetCodeHash = null;
+        PasswordResetCodeExpiresAt = null;
+        PasswordResetAttempts = 0;
+        FailedLoginAttempts = 0;
+        LockedUntil = null;
+        response.Data = this;
+        return response;
     }
 
     /// <summary>A wrong password; locks the account for <see cref="LockoutDuration"/> after too many in a row.</summary>
