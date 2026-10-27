@@ -6,6 +6,7 @@ using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Identity;
 using Waggo.Domain.Enums.Common;
 using Waggo.Domain.Errors.Identity;
+using Waggo.Domain.Exceptions;
 
 namespace Waggo.Application.UnitTests.Identity.Commands.Register;
 
@@ -46,6 +47,17 @@ public class RegisterHandlerTests
             Arg.Any<CancellationToken>());
         await _emailSender.Received(1).SendAsync(
             "ana@mail.com", Arg.Any<string>(), Arg.Is<string>(body => body.Contains("raw-token")), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_EmailCannotBeSent_DoesNotSaveTheAccountSoTheUserCanTryAgain()
+    {
+        _emailSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new ExternalServiceException(EmailErrors.SendFailed)));
+
+        await Should.ThrowAsync<ExternalServiceException>(() => _sut.HandleAsync(Command(), CancellationToken.None));
+
+        await _users.DidNotReceive().AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
