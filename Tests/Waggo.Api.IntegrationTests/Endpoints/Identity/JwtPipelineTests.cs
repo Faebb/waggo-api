@@ -15,14 +15,12 @@ namespace Waggo.Api.IntegrationTests.Endpoints.Identity;
 [Collection(JwtPipelineCollectionDefinition.Name)]
 public class JwtPipelineTests(JwtPipelineWaggoApiFactory factory)
 {
-    private static string ExtractCode(string emailBody) => emailBody.Split(": ")[^1];
-
     private async Task<string> IssueAccessTokenAsync(HttpClient client)
     {
         string email = $"ana-{Guid.NewGuid():N}@mail.com";
         await client.PostAsJsonAsync(new Uri("/api/v1/auth/register", UriKind.Relative), new { email, password = "Clave123!" });
-        string confirmationToken = ExtractCode(factory.Emails.LastBodySentTo(email));
-        await client.GetAsync(new Uri($"/api/v1/auth/confirm?token={confirmationToken}", UriKind.Relative));
+        string code = factory.Emails.LastConfirmationCodeSentTo(email);
+        await client.PostAsJsonAsync(new Uri("/api/v1/auth/confirm", UriKind.Relative), new { email, code });
 
         HttpResponseMessage login = await client.PostAsJsonAsync(
             new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = "Clave123!" });

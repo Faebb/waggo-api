@@ -17,11 +17,9 @@ public class LoginEndpointTests(WaggoApiFactory factory)
     private async Task RegisterAndConfirmAsync(HttpClient client, string email)
     {
         await client.PostAsJsonAsync(s_register, new { email, password = "Clave123!" });
-        string token = ExtractCode(factory.Emails.LastBodySentTo(email));
-        await client.GetAsync(new Uri($"/api/v1/auth/confirm?token={token}", UriKind.Relative));
+        string code = factory.Emails.LastConfirmationCodeSentTo(email);
+        await client.PostAsJsonAsync(new Uri("/api/v1/auth/confirm", UriKind.Relative), new { email, code });
     }
-
-    private static string ExtractCode(string emailBody) => emailBody.Split(": ")[^1];
 
     [Fact]
     public async Task FullFlow_RegisterConfirmLogin_IssuesASession()

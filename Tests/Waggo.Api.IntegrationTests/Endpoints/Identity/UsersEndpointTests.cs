@@ -17,15 +17,13 @@ public class UsersEndpointTests(JwtPipelineWaggoApiFactory factory)
 {
     private static readonly Uri s_me = new("/api/v1/users/me", UriKind.Relative);
 
-    private static string ExtractCode(string emailBody) => emailBody.Split(": ")[^1];
-
     private async Task<HttpClient> SignedInClientAsync()
     {
         HttpClient client = factory.CreateClient();
         string email = $"ana-{Guid.NewGuid():N}@mail.com";
         await client.PostAsJsonAsync(new Uri("/api/v1/auth/register", UriKind.Relative), new { email, password = "Clave123!" });
-        string confirmationToken = ExtractCode(factory.Emails.LastBodySentTo(email));
-        await client.GetAsync(new Uri($"/api/v1/auth/confirm?token={confirmationToken}", UriKind.Relative));
+        string code = factory.Emails.LastConfirmationCodeSentTo(email);
+        await client.PostAsJsonAsync(new Uri("/api/v1/auth/confirm", UriKind.Relative), new { email, code });
 
         HttpResponseMessage login = await client.PostAsJsonAsync(
             new Uri("/api/v1/auth/login", UriKind.Relative), new { email, password = "Clave123!" });
