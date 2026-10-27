@@ -21,8 +21,8 @@ public class RegisterHandlerTests
     public RegisterHandlerTests()
     {
         _passwordHasher.Hash("Clave123!").Returns("hashed-password");
-        _tokenGenerator.GenerateToken().Returns("raw-token");
-        _tokenGenerator.Hash("raw-token").Returns("token-hash");
+        _tokenGenerator.GenerateNumericCode().Returns("123456");
+        _tokenGenerator.Hash("123456").Returns("code-hash");
         _sut = new RegisterHandler(
             new RegisterCommandValidator(),
             _users,
@@ -46,7 +46,21 @@ public class RegisterHandlerTests
             Arg.Is<User>(user => user.Email == "ana@mail.com" && user.PasswordHash == "hashed-password"),
             Arg.Any<CancellationToken>());
         await _emailSender.Received(1).SendAsync(
-            "ana@mail.com", Arg.Any<string>(), Arg.Is<string>(body => body.Contains("raw-token")), Arg.Any<CancellationToken>());
+            "ana@mail.com",
+            "Tu código de confirmación de Waggo",
+            Arg.Is<string>(body => body.Contains("123456") && body.Contains("30 minutos")),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NewEmail_StoresOnlyTheHashOfTheCodeWithItsExpiry()
+    {
+        await _sut.HandleAsync(Command(), CancellationToken.None);
+
+        await _users.Received(1).AddAsync(
+            Arg.Is<User>(user => user.ConfirmationTokenHash == "code-hash"
+                && user.ConfirmationTokenExpiresAt == FixedTimeProvider.Default.Add(User.ConfirmationTokenLifetime)),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

@@ -101,6 +101,114 @@ public class UserTests
     }
 
     [Fact]
+    public void ConfirmationTokenLifetime_IsThirtyMinutes()
+    {
+        User.ConfirmationTokenLifetime.ShouldBe(TimeSpan.FromMinutes(30));
+    }
+
+    [Fact]
+    public void Confirm_WrongCode_CountsAnAttemptAndKeepsTheCode()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "code-hash", s_now).Data;
+
+        user.Confirm("other-hash", s_now);
+
+        user.ConfirmationAttempts.ShouldBe(1);
+        user.ConfirmationTokenHash.ShouldBe("code-hash");
+    }
+
+    [Fact]
+    public void Confirm_RightCodeAfterFourWrongOnes_StillActivatesTheAccount()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "code-hash", s_now).Data;
+        for (int attempt = 0; attempt < User.MaxConfirmationAttempts - 1; attempt++)
+        {
+            user.Confirm("other-hash", s_now);
+        }
+
+        WaggoResponse<User> result = user.Confirm("code-hash", s_now);
+
+        result.IsValid.ShouldBeTrue();
+        user.EmailConfirmed.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Confirm_RightCodeAfterFiveWrongOnes_FailsWithAttemptsExceeded()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "code-hash", s_now).Data;
+        for (int attempt = 0; attempt < User.MaxConfirmationAttempts; attempt++)
+        {
+            user.Confirm("other-hash", s_now);
+        }
+
+        WaggoResponse<User> result = user.Confirm("code-hash", s_now);
+
+        result.Errors.Single().Code.ShouldBe(IdentityErrors.ConfirmationAttemptsExceeded.Code);
+        result.ErrorType.ShouldBe(ErrorType.BusinessRule);
+        user.EmailConfirmed.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void Confirm_AccountWithoutAPendingCode_FailsWithInvalidAndCountsNothing()
+    {
+        User user = User.Seed("ana@mail.com", "hashed-password", isAdmin: false, s_now);
+
+        WaggoResponse<User> result = user.Confirm("any-hash", s_now);
+
+        result.Errors.Single().Code.ShouldBe(IdentityErrors.ConfirmationTokenInvalid.Code);
+        user.ConfirmationAttempts.ShouldBe(0);
+    }
+
+    [Fact]
+    public void TryIssueConfirmationCode_AfterTheWaitTime_ReplacesTheCodeAndResetsTheAttempts()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "code-hash", s_now).Data;
+        user.Confirm("other-hash", s_now);
+        user.Confirm("other-hash", s_now);
+        DateTimeOffset later = s_now.Add(User.ConfirmationResendCooldown);
+
+        bool issued = user.TryIssueConfirmationCode("new-hash", later);
+
+        issued.ShouldBeTrue();
+        user.ConfirmationTokenHash.ShouldBe("new-hash");
+        user.ConfirmationTokenExpiresAt.ShouldBe(later.Add(User.ConfirmationTokenLifetime));
+        user.ConfirmationAttempts.ShouldBe(0);
+    }
+
+    [Fact]
+    public void TryIssueConfirmationCode_BeforeTheWaitTime_ChangesNothing()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "code-hash", s_now).Data;
+
+        bool issued = user.TryIssueConfirmationCode("new-hash", s_now.Add(User.ConfirmationResendCooldown).AddSeconds(-1));
+
+        issued.ShouldBeFalse();
+        user.ConfirmationTokenHash.ShouldBe("code-hash");
+    }
+
+    [Fact]
+    public void TryIssueConfirmationCode_AfterTheCodeExpired_IssuesANewOne()
+    {
+        User user = User.Register("ana@mail.com", "hashed-password", "code-hash", s_now).Data;
+
+        bool issued = user.TryIssueConfirmationCode("new-hash", s_now.Add(User.ConfirmationTokenLifetime).AddMinutes(1));
+
+        issued.ShouldBeTrue();
+        user.ConfirmationTokenHash.ShouldBe("new-hash");
+    }
+
+    [Fact]
+    public void TryIssueConfirmationCode_ConfirmedAccount_IssuesNothing()
+    {
+        User user = User.Seed("ana@mail.com", "hashed-password", isAdmin: false, s_now);
+
+        bool issued = user.TryIssueConfirmationCode("new-hash", s_now.AddHours(1));
+
+        issued.ShouldBeFalse();
+        user.ConfirmationTokenHash.ShouldBeNull();
+    }
+
+    [Fact]
     public void Seed_AnyEmail_CreatesAnAlreadyConfirmedAccountWithoutAConfirmationToken()
     {
         User user = User.Seed("Admin@Mail.com", "hashed-password", isAdmin: true, s_now);

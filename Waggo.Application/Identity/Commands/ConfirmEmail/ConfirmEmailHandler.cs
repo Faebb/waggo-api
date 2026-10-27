@@ -6,7 +6,7 @@ using Waggo.Domain.Errors.Identity;
 
 namespace Waggo.Application.Identity.Commands.ConfirmEmail;
 
-/// <summary>RF-001: activates the account once the owner of the inbox presents the confirmation token.</summary>
+/// <summary>RF-001: activates the account once the owner of the inbox types the 6-digit code from the email.</summary>
 internal sealed class ConfirmEmailHandler(
     IUserRepository users,
     ITokenGenerator tokenGenerator,
@@ -18,22 +18,27 @@ internal sealed class ConfirmEmailHandler(
         ArgumentNullException.ThrowIfNull(command);
         WaggoResponse<bool> response = new();
 
-        string tokenHash = tokenGenerator.Hash(command.Token ?? string.Empty);
-        User? user = await users.GetByConfirmationTokenHashAsync(tokenHash, cancellationToken);
-        if (user is null)
+        string normalizedEmail = command.Email?.Trim().ToLowerInvariant() ?? string.Empty;
+        User? user = await users.GetByEmailAsync(normalizedEmail, cancellationToken);
+        if (user is null || user.EmailConfirmed)
         {
+            // Same answer as a wrong code, so the endpoint does not reveal which emails have an account.
             response.AddError(IdentityErrors.ConfirmationTokenInvalid);
             return response;
         }
 
-        WaggoResponse<User> confirmed = user.Confirm(tokenHash, timeProvider.GetUtcNow());
+        string codeHash = tokenGenerator.Hash(command.Code ?? string.Empty);
+        WaggoResponse<User> confirmed = user.Confirm(codeHash, timeProvider.GetUtcNow());
+
+        // Saved even when the code was wrong: the failed attempt is what limits guessing.
+        await users.SaveChangesAsync(cancellationToken);
+
         response.ConcatStacks(confirmed);
         if (!response.IsValid)
         {
             return response;
         }
 
-        await users.SaveChangesAsync(cancellationToken);
         response.Data = true;
         return response;
     }

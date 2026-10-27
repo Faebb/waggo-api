@@ -9,7 +9,14 @@ namespace Waggo.Domain.Entities.Identity;
 /// </summary>
 public sealed class User
 {
-    public static readonly TimeSpan ConfirmationTokenLifetime = TimeSpan.FromHours(24);
+    /// <summary>How long the 6-digit confirmation code works (a short code is only safe with a short life).</summary>
+    public static readonly TimeSpan ConfirmationTokenLifetime = TimeSpan.FromMinutes(30);
+
+    /// <summary>Wrong confirmation codes allowed before the code is burned and a new one must be requested.</summary>
+    public const int MaxConfirmationAttempts = 5;
+
+    /// <summary>Minimum time between two confirmation emails to the same account.</summary>
+    public static readonly TimeSpan ConfirmationResendCooldown = TimeSpan.FromSeconds(60);
 
     public const int MaxFailedLoginAttempts = 5;
 
@@ -35,10 +42,13 @@ public sealed class User
 
     public bool IsAdmin { get; private set; }
 
-    /// <summary>Hash of the confirmation token (RF-001); never the raw token. Cleared once confirmed.</summary>
+    /// <summary>Hash of the 6-digit confirmation code (RF-001); never the raw code. Cleared once confirmed.</summary>
     public string? ConfirmationTokenHash { get; private set; }
 
     public DateTimeOffset? ConfirmationTokenExpiresAt { get; private set; }
+
+    /// <summary>Wrong codes typed for the current confirmation code; reset when a new one is issued.</summary>
+    public int ConfirmationAttempts { get; private set; }
 
     public DateTimeOffset RegisteredAt { get; private set; }
 
@@ -105,13 +115,16 @@ public sealed class User
         };
     }
 
-    /// <summary>Activates the account once the owner of the inbox proves it by presenting the token.</summary>
-    public WaggoResponse<User> Confirm(string tokenHash, DateTimeOffset now)
+    /// <summary>
+    /// Activates the account once the owner of the inbox presents the 6-digit code (its hash). A wrong code counts an
+    /// attempt: after <see cref="MaxConfirmationAttempts"/> even the right one is refused until a new code is issued.
+    /// </summary>
+    public WaggoResponse<User> Confirm(string codeHash, DateTimeOffset now)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tokenHash);
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
         WaggoResponse<User> response = new();
 
-        if (ConfirmationTokenHash is null || ConfirmationTokenHash != tokenHash)
+        if (ConfirmationTokenHash is null)
         {
             response.AddError(IdentityErrors.ConfirmationTokenInvalid);
             return response;
@@ -123,11 +136,50 @@ public sealed class User
             return response;
         }
 
+        if (ConfirmationAttempts >= MaxConfirmationAttempts)
+        {
+            response.AddError(IdentityErrors.ConfirmationAttemptsExceeded);
+            return response;
+        }
+
+        if (ConfirmationTokenHash != codeHash)
+        {
+            ConfirmationAttempts++;
+            response.AddError(IdentityErrors.ConfirmationTokenInvalid);
+            return response;
+        }
+
         EmailConfirmed = true;
         ConfirmationTokenHash = null;
         ConfirmationTokenExpiresAt = null;
+        ConfirmationAttempts = 0;
         response.Data = this;
         return response;
+    }
+
+    /// <summary>
+    /// Replaces the pending code with a new one (resend). Refused, changing nothing, when the account is already
+    /// confirmed or the last code was sent less than <see cref="ConfirmationResendCooldown"/> ago.
+    /// </summary>
+    public bool TryIssueConfirmationCode(string codeHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
+
+        if (EmailConfirmed)
+        {
+            return false;
+        }
+
+        if (ConfirmationTokenExpiresAt is DateTimeOffset expiresAt
+            && now < expiresAt - ConfirmationTokenLifetime + ConfirmationResendCooldown)
+        {
+            return false;
+        }
+
+        ConfirmationTokenHash = codeHash;
+        ConfirmationTokenExpiresAt = now.Add(ConfirmationTokenLifetime);
+        ConfirmationAttempts = 0;
+        return true;
     }
 
     /// <summary>A wrong password; locks the account for <see cref="LockoutDuration"/> after too many in a row.</summary>

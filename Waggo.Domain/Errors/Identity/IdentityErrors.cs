@@ -20,13 +20,18 @@ public static class IdentityErrors
 
     public static readonly Error ConfirmationTokenInvalid = new(
         "Identity.ConfirmationTokenInvalid",
-        "El enlace de confirmación no es válido.",
+        "El código no es válido. Revisa que sean los 6 números del correo.",
         ErrorType.NotFound);
 
     public static readonly Error ConfirmationTokenExpired = new(
         "Identity.ConfirmationTokenExpired",
-        "El enlace de confirmación expiró, pide uno nuevo.",
+        "El código venció, pide uno nuevo.",
         ErrorType.Conflict);
+
+    public static readonly Error ConfirmationAttemptsExceeded = new(
+        "Identity.ConfirmationAttemptsExceeded",
+        "Demasiados intentos, pide un código nuevo.",
+        ErrorType.BusinessRule);
 
     public static readonly Error InvalidCredentials = new(
         "Identity.InvalidCredentials",

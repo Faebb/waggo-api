@@ -39,11 +39,11 @@ internal sealed class RegisterHandler(
         }
 
         string passwordHash = passwordHasher.Hash(command.Password);
-        string confirmationToken = tokenGenerator.GenerateToken();
-        string confirmationTokenHash = tokenGenerator.Hash(confirmationToken);
+        string confirmationCode = tokenGenerator.GenerateNumericCode();
+        string confirmationCodeHash = tokenGenerator.Hash(confirmationCode);
 
         WaggoResponse<User> user =
-            User.Register(normalizedEmail, passwordHash, confirmationTokenHash, timeProvider.GetUtcNow());
+            User.Register(normalizedEmail, passwordHash, confirmationCodeHash, timeProvider.GetUtcNow());
         response.ConcatStacks(user);
         if (!response.IsValid)
         {
@@ -53,8 +53,8 @@ internal sealed class RegisterHandler(
         // Email first: if the provider fails, nothing is saved and the person can register again right away.
         await emailSender.SendAsync(
             user.Data.Email,
-            "Confirma tu cuenta de Waggo",
-            $"Confirma tu cuenta con este código: {confirmationToken}",
+            ConfirmationEmail.Subject,
+            ConfirmationEmail.Body(confirmationCode),
             cancellationToken);
         await users.AddAsync(user.Data, cancellationToken);
 
