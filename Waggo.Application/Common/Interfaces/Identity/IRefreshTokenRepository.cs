@@ -12,6 +12,13 @@ public interface IRefreshTokenRepository
     /// <summary>Reuse of an already-rotated token is a stolen-token signal: the whole family is cut off.</summary>
     Task RevokeAllForUserAsync(Guid userId, DateTimeOffset now, CancellationToken cancellationToken);
 
+    /// <summary>Closes every session of the user but the one that is changing the password.</summary>
+    Task RevokeAllForUserExceptAsync(
+        Guid userId,
+        Guid keepTokenId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken);
+
     /// <summary>Persists changes to an entity already tracked from a previous <c>Get</c> call.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

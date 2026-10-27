@@ -179,7 +179,9 @@ public class ChangePasswordEndpointTests(JwtPipelineWaggoApiFactory factory)
         HttpResponseMessage response = await client.PutAsJsonAsync(s_password, new { });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await FirstErrorCodeAsync(response)).ShouldBe("Request.Required");
+        WaggoApiResponse<object> body = (await response.Content.ReadFromJsonAsync<WaggoApiResponse<object>>())!;
+        body.Errors.Count.ShouldBe(2);
+        body.Errors.ShouldAllBe(error => error.Code == "Request.Required");
     }
 
     [Fact]
