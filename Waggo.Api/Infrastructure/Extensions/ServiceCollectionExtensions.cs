@@ -24,6 +24,8 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration,
         IHostEnvironment environment)
     {
+        EmailStartupGuard.EnsureRealProviderInProduction(configuration, environment);
+
         return services
             .AddWaggoLogging(configuration)
             .AddWaggoJson()
