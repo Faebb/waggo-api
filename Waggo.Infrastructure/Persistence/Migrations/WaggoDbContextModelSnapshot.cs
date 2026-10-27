@@ -91,6 +91,19 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("email");
 
+                    b.Property<int>("EmailChangeAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("email_change_attempts");
+
+                    b.Property<DateTimeOffset?>("EmailChangeCodeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_change_code_expires_at");
+
+                    b.Property<string>("EmailChangeCodeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("email_change_code_hash");
+
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
@@ -129,6 +142,11 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("password_reset_code_hash");
+
+                    b.Property<string>("PendingEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("pending_email");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(20)

@@ -5,6 +5,8 @@ using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ChangePassword;
+using Waggo.Application.Identity.Commands.ConfirmEmailChange;
+using Waggo.Application.Identity.Commands.RequestEmailChange;
 using Waggo.Application.Identity.Commands.UpdateMyProfile;
 using Waggo.Application.Identity.Queries.GetMyProfile;
 using Waggo.Domain.Common;
@@ -31,6 +33,16 @@ internal static class UsersEndpoints
         group.MapPut("/password", ChangePasswordAsync)
             .WithName("ChangeMyPassword")
             .WithRequestValidation<ChangePasswordRequest>()
+            .Produces<WaggoApiResponse<bool>>();
+
+        group.MapPost("/email", RequestEmailChangeAsync)
+            .WithName("RequestEmailChange")
+            .WithRequestValidation<RequestEmailChangeRequest>()
+            .Produces<WaggoApiResponse<bool>>();
+
+        group.MapPost("/email/confirm", ConfirmEmailChangeAsync)
+            .WithName("ConfirmEmailChange")
+            .WithRequestValidation<ConfirmEmailChangeRequest>()
             .Produces<WaggoApiResponse<bool>>();
 
         return routes;
@@ -65,6 +77,28 @@ internal static class UsersEndpoints
     {
         WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "ChangePassword");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> RequestEmailChangeAsync(
+        RequestEmailChangeRequest request,
+        ICommandHandler<RequestEmailChangeCommand, bool> handler,
+        ILogger<RequestEmailChangeRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "RequestEmailChange");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ConfirmEmailChangeAsync(
+        ConfirmEmailChangeRequest request,
+        ICommandHandler<ConfirmEmailChangeCommand, bool> handler,
+        ILogger<ConfirmEmailChangeRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "ConfirmEmailChange");
         return response.ToApiResult();
     }
 }
