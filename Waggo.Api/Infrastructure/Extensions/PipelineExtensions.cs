@@ -95,18 +95,18 @@ public static class PipelineExtensions
     }
 
     /// <summary>
-    /// Development and Testing only: seeds the admin account from "Seed:Admin" (<see cref="AdminSeedOptions"/>), so
-    /// real sign-in flows (register/login/2FA) can be exercised with every role instead of the development-user
-    /// bypass. A missing configuration value means no admin is seeded.
+    /// Development and Testing only (DEV-001): seeds the admin, owner and walker test accounts from "Seed:Users"
+    /// (<see cref="SeedUsersOptions"/>), so the real login can be exercised with every role instead of the
+    /// development-user bypass. Any other environment never runs it, whatever the configuration says.
     /// </summary>
-    public static async Task SeedAdminUserIfLocalAsync(this WebApplication app)
+    public static async Task SeedDevelopmentUsersIfLocalAsync(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);
 
         if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
         {
             await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
-            AdminUserSeeder seeder = scope.ServiceProvider.GetRequiredService<AdminUserSeeder>();
+            DevelopmentUsersSeeder seeder = scope.ServiceProvider.GetRequiredService<DevelopmentUsersSeeder>();
             await seeder.SeedAsync(app.Lifetime.ApplicationStopping);
         }
     }
