@@ -26,7 +26,15 @@ dotnet run --project Waggo.Api      # http://localhost:5080
 ```
 - OpenAPI (solo Development): `/openapi/v1.json`.
 - En Development no se necesita token: un usuario de desarrollo con los roles `owner`, `walker` y `admin` firma cada request (mientras `Authentication:UseDevelopmentUser` sea `true`, ese bypass gana sobre cualquier `Authorization: Bearer`). Para probar otro rol envía el header `X-Dev-Roles: walker`; para actuar como otro usuario, `X-Dev-User-Id: otro-dueno`.
-- **Admin real para probar el login de verdad**: con `Seed:Admin` configurado (ya viene en `appsettings.Development.json`: `admin@waggo.local` / `Admin1234`), la API crea al arrancar una cuenta ya confirmada con `IsAdmin = true`. Como las políticas `Owner` y `Walker` también aceptan el rol `admin`, esa cuenta puede llamar cualquier endpoint. `POST /auth/login` entrega la sesión directamente (ADR-017: sin segundo factor) — sirve para ejercitar el flujo real de autenticación en vez del bypass, útil antes de desplegar a un ambiente en la nube. Para que el `Authorization: Bearer` del admin sea realmente quien autoriza (y no el usuario de desarrollo), pon `Authentication:UseDevelopmentUser` en `false` esa sesión.
+- **Usuarios de prueba (DEV-001)**: en Development y Testing, después de aplicar las migraciones, la API crea (si no existen) estas cuentas ya confirmadas, configuradas en `Seed:Users` de `appsettings.Development.json`:
+
+  | Rol | Correo | Contraseña | Nombre |
+  |---|---|---|---|
+  | `admin` | `admin@waggo.local` | `Admin1234` | Administrador Waggo |
+  | `owner` | `dueno@waggo.local` | `Dueno1234` | Laura Gómez |
+  | `walker` | `paseador@waggo.local` | `Paseador1234` | Carlos Ramírez (perfil de paseador ya aprobado) |
+
+  Todo usuario confirmado también es `owner`. `POST /auth/login` entrega la sesión directamente (ADR-017). En cualquier otro ambiente el seeder no se ejecuta, y `appsettings.json` no puede traer la sección `Seed` (lo comprueba `ProductionSettingsTests`). **Nunca uses estas contraseñas fuera de desarrollo y pruebas.** Para que el `Authorization: Bearer` sea realmente quien autoriza (y no el usuario de desarrollo), pon `Authentication:UseDevelopmentUser` en `false` esa sesión.
 - En Development y en las pruebas, la API aplica las migraciones pendientes al arrancar. En otros ambientes se aplican como un paso del despliegue.
 - Health checks: `/health/live` (el proceso responde) y `/health/ready` (PostgreSQL disponible).
 
