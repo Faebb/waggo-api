@@ -59,4 +59,19 @@ public static class IdentityErrors
     public static readonly Error InvalidPhone = new(
         "Identity.InvalidPhone",
         "El celular es muy largo.");
+
+    public static readonly Error ResetCodeInvalid = new(
+        "Identity.ResetCodeInvalid",
+        "El código no es válido. Revisa que sean los 6 números del correo.",
+        ErrorType.NotFound);
+
+    public static readonly Error ResetCodeExpired = new(
+        "Identity.ResetCodeExpired",
+        "El código venció, pide uno nuevo.",
+        ErrorType.Conflict);
+
+    public static readonly Error ResetAttemptsExceeded = new(
+        "Identity.ResetAttemptsExceeded",
+        "Demasiados intentos, pide un código nuevo.",
+        ErrorType.BusinessRule);
 }
