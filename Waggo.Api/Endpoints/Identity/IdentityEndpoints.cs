@@ -8,6 +8,7 @@ using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.Login;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
+using Waggo.Application.Identity.Commands.ResendConfirmation;
 using Waggo.Domain.Common;
 
 namespace Waggo.Api.Endpoints.Identity;
@@ -29,9 +30,14 @@ internal static class IdentityEndpoints
             .WithRequestValidation<RegisterRequest>()
             .Produces<WaggoApiResponse<UserResponse>>();
 
-        group.MapGet("/confirm", ConfirmAsync)
+        group.MapPost("/confirm", ConfirmAsync)
             .WithName("ConfirmEmail")
             .WithRequestValidation<ConfirmRequest>()
+            .Produces<WaggoApiResponse<bool>>();
+
+        group.MapPost("/resend-confirmation", ResendConfirmationAsync)
+            .WithName("ResendConfirmation")
+            .WithRequestValidation<ResendConfirmationRequest>()
             .Produces<WaggoApiResponse<bool>>();
 
         group.MapPost("/login", LoginAsync)
@@ -59,13 +65,24 @@ internal static class IdentityEndpoints
     }
 
     private static async Task<IResult> ConfirmAsync(
-        [AsParameters] ConfirmRequest request,
+        ConfirmRequest request,
         ICommandHandler<ConfirmEmailCommand, bool> handler,
         ILogger<ConfirmRequest> logger,
         CancellationToken cancellationToken)
     {
         WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "ConfirmEmail");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ResendConfirmationAsync(
+        ResendConfirmationRequest request,
+        ICommandHandler<ResendConfirmationCommand, bool> handler,
+        ILogger<ResendConfirmationRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "ResendConfirmation");
         return response.ToApiResult();
     }
 

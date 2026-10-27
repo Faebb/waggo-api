@@ -72,6 +72,10 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("ConfirmationAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("confirmation_attempts");
+
                     b.Property<DateTimeOffset?>("ConfirmationTokenExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmation_token_expires_at");
@@ -124,9 +128,6 @@ namespace Waggo.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_users");
-
-                    b.HasIndex("ConfirmationTokenHash")
-                        .HasDatabaseName("ix_users_confirmation_token_hash");
 
                     b.HasIndex("Email")
                         .IsUnique()

@@ -25,7 +25,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.IsAdmin).IsRequired();
 
         builder.Property(user => user.ConfirmationTokenHash).HasMaxLength(64);
-        builder.HasIndex(user => user.ConfirmationTokenHash);
+        builder.Property(user => user.ConfirmationAttempts).IsRequired();
 
         builder.Property(user => user.RegisteredAt).IsRequired();
 

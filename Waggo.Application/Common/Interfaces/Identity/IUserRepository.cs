@@ -13,8 +13,6 @@ public interface IUserRepository
 
     Task AddAsync(User user, CancellationToken cancellationToken);
 
-    Task<User?> GetByConfirmationTokenHashAsync(string tokenHash, CancellationToken cancellationToken);
-
     /// <summary>Persists changes to an entity already tracked from a previous <c>Get</c> call.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

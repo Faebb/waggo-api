@@ -23,8 +23,5 @@ internal sealed class UserRepository(WaggoDbContext db) : IUserRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<User?> GetByConfirmationTokenHashAsync(string tokenHash, CancellationToken cancellationToken) =>
-        db.Users.FirstOrDefaultAsync(user => user.ConfirmationTokenHash == tokenHash, cancellationToken);
-
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 }
