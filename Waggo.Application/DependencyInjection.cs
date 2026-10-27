@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
+using Waggo.Application.Identity.Commands.ChangePassword;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.ForgotPassword;
 using Waggo.Application.Identity.Commands.Login;
@@ -65,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<ForgotPasswordCommand, bool>, ForgotPasswordHandler>();
         services.AddScoped<ICommandHandler<ResetPasswordCommand, bool>, ResetPasswordHandler>();
         services.AddScoped<ICommandHandler<LogoutCommand, bool>, LogoutHandler>();
+        services.AddScoped<ICommandHandler<ChangePasswordCommand, bool>, ChangePasswordHandler>();
         services.AddScoped<ICommandHandler<LoginCommand, SessionResponse>, LoginHandler>();
         services.AddScoped<ICommandHandler<RefreshSessionCommand, SessionResponse>, RefreshSessionHandler>();
         services.AddScoped<IQueryHandler<GetMyProfileQuery, UserProfileResponse>, GetMyProfileHandler>();

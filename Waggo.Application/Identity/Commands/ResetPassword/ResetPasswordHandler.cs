@@ -4,9 +4,7 @@ using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Identity;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Identity;
-using Waggo.Domain.Enums.Common;
 using Waggo.Domain.Errors.Identity;
-using Waggo.Domain.Exceptions;
 
 namespace Waggo.Application.Identity.Commands.ResetPassword;
 
@@ -60,29 +58,9 @@ internal sealed class ResetPasswordHandler(
         }
 
         await refreshTokens.RevokeAllForUserAsync(user.Id, now, cancellationToken);
-        await NotifyAsync(user.Email, response, cancellationToken);
+        await PasswordChangedNotice.SendAsync(emailSender, user.Email, response, cancellationToken);
 
         response.Data = true;
         return response;
-    }
-
-    private async Task NotifyAsync(string email, WaggoResponse<bool> response, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await emailSender.SendAsync(
-                email,
-                PasswordChangedEmail.Subject,
-                PasswordChangedEmail.Body,
-                cancellationToken);
-        }
-        catch (ExternalServiceException exception)
-        {
-            // The password is already changed: a failed notice must not turn that into an error.
-            response.AddWarning(
-                EmailErrors.SendFailed.Code,
-                $"No se pudo enviar el aviso de seguridad: {exception.Message}",
-                MessageVisibility.Internal);
-        }
     }
 }

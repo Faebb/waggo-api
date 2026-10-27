@@ -271,6 +271,17 @@ public sealed class User
         return response;
     }
 
+    /// <summary>
+    /// Replaces the password of a signed-in account that proved it knows the current one (RF-005). The failed
+    /// attempts counted while it was proving it are forgiven.
+    /// </summary>
+    public void ChangePassword(string newPasswordHash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newPasswordHash);
+        PasswordHash = newPasswordHash;
+        FailedLoginAttempts = 0;
+    }
+
     /// <summary>A wrong password; locks the account for <see cref="LockoutDuration"/> after too many in a row.</summary>
     public void RegisterFailedLoginAttempt(DateTimeOffset now)
     {

@@ -1,8 +1,10 @@
 using Waggo.Api.Endpoints.Identity.Requests;
+using Waggo.Api.Infrastructure.Extensions;
 using Waggo.Api.Infrastructure.Responses;
 using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Identity;
+using Waggo.Application.Identity.Commands.ChangePassword;
 using Waggo.Application.Identity.Commands.UpdateMyProfile;
 using Waggo.Application.Identity.Queries.GetMyProfile;
 using Waggo.Domain.Common;
@@ -26,6 +28,11 @@ internal static class UsersEndpoints
             .WithName("UpdateMyProfile")
             .Produces<WaggoApiResponse<UserProfileResponse>>();
 
+        group.MapPut("/password", ChangePasswordAsync)
+            .WithName("ChangeMyPassword")
+            .WithRequestValidation<ChangePasswordRequest>()
+            .Produces<WaggoApiResponse<bool>>();
+
         return routes;
     }
 
@@ -47,6 +54,17 @@ internal static class UsersEndpoints
     {
         WaggoResponse<UserProfileResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "UpdateMyProfile");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> ChangePasswordAsync(
+        ChangePasswordRequest request,
+        ICommandHandler<ChangePasswordCommand, bool> handler,
+        ILogger<ChangePasswordRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "ChangePassword");
         return response.ToApiResult();
     }
 }

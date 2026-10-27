@@ -74,4 +74,14 @@ public static class IdentityErrors
         "Identity.ResetAttemptsExceeded",
         "Demasiados intentos, pide un código nuevo.",
         ErrorType.BusinessRule);
+
+    public static readonly Error CurrentPasswordIncorrect = new(
+        "Identity.CurrentPasswordIncorrect",
+        "La contraseña actual no es correcta.",
+        ErrorType.BusinessRule);
+
+    public static readonly Error PasswordUnchanged = new(
+        "Identity.PasswordUnchanged",
+        "La contraseña nueva debe ser distinta de la actual.",
+        ErrorType.BusinessRule);
 }
