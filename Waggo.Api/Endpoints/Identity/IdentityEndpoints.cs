@@ -7,6 +7,7 @@ using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.ForgotPassword;
 using Waggo.Application.Identity.Commands.Login;
+using Waggo.Application.Identity.Commands.Logout;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
 using Waggo.Application.Identity.Commands.ResendConfirmation;
@@ -51,6 +52,11 @@ internal static class IdentityEndpoints
             .WithName("Refresh")
             .WithRequestValidation<RefreshRequest>()
             .Produces<WaggoApiResponse<SessionResponse>>();
+
+        group.MapPost("/logout", LogoutAsync)
+            .WithName("Logout")
+            .WithRequestValidation<LogoutRequest>()
+            .Produces<WaggoApiResponse<bool>>();
 
         group.MapPost("/forgot-password", ForgotPasswordAsync)
             .WithName("ForgotPassword")
@@ -139,6 +145,17 @@ internal static class IdentityEndpoints
     {
         WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "ResetPassword");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> LogoutAsync(
+        LogoutRequest request,
+        ICommandHandler<LogoutCommand, bool> handler,
+        ILogger<LogoutRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<bool> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "Logout");
         return response.ToApiResult();
     }
 }
