@@ -64,32 +64,11 @@ internal sealed class ChangePasswordHandler(
         user.ChangePassword(passwordHasher.Hash(command.NewPassword));
         await users.SaveChangesAsync(cancellationToken);
 
-        await CloseOtherSessionsAsync(user, command.RefreshToken, now, cancellationToken);
+        await SessionCloser.CloseOthersAsync(
+            refreshTokens, tokenGenerator, user.Id, command.RefreshToken, now, cancellationToken);
         await PasswordChangedNotice.SendAsync(emailSender, user.Email, response, cancellationToken);
 
         response.Data = true;
         return response;
-    }
-
-    private async Task CloseOtherSessionsAsync(
-        User user,
-        string? sessionRefreshToken,
-        DateTimeOffset now,
-        CancellationToken cancellationToken)
-    {
-        RefreshToken? session = null;
-        if (!string.IsNullOrEmpty(sessionRefreshToken))
-        {
-            session = await refreshTokens.GetByTokenHashAsync(tokenGenerator.Hash(sessionRefreshToken), cancellationToken);
-        }
-
-        // Only this account's own active session may be kept: anything else closes every session.
-        if (session is not null && session.UserId == user.Id && session.IsActive(now))
-        {
-            await refreshTokens.RevokeAllForUserExceptAsync(user.Id, session.Id, now, cancellationToken);
-            return;
-        }
-
-        await refreshTokens.RevokeAllForUserAsync(user.Id, now, cancellationToken);
     }
 }
