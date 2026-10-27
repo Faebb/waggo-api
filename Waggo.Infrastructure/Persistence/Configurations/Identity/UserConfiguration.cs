@@ -28,6 +28,9 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.ConfirmationAttempts).IsRequired();
         builder.Property(user => user.PasswordResetCodeHash).HasMaxLength(64);
         builder.Property(user => user.PasswordResetAttempts).IsRequired();
+        builder.Property(user => user.PendingEmail).HasMaxLength(256);
+        builder.Property(user => user.EmailChangeCodeHash).HasMaxLength(64);
+        builder.Property(user => user.EmailChangeAttempts).IsRequired();
 
         builder.Property(user => user.RegisteredAt).IsRequired();
 

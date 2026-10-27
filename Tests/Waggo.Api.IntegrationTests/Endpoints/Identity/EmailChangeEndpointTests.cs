@@ -73,7 +73,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_FreeEmailAndRightPassword_EmailsACodeToTheNewAddressOnly()
     {
         (HttpClient client, string oldEmail, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string newEmail = NewEmail();
         int oldBefore = factory.Emails.SentCountTo(oldEmail);
 
@@ -92,7 +92,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Confirm_RightCode_ChangesTheEmailAndTheLoginUsesTheNewOne()
     {
         (HttpClient client, string oldEmail, SessionResponse session) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string newEmail = NewEmail();
         string code = await RequestChangeAsync(client, newEmail);
         int oldBefore = factory.Emails.SentCountTo(oldEmail);
@@ -117,7 +117,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Confirm_RightCode_KeepsThisSessionAndClosesTheOthers()
     {
         (HttpClient client, string email, SessionResponse thisDevice) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         using HttpClient anonymous = factory.CreateClient();
         SessionResponse otherDevice = await LoginAsync(anonymous, email);
         string code = await RequestChangeAsync(client, NewEmail());
@@ -134,7 +134,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_WrongPassword_Returns422AndSendsNothing()
     {
         (HttpClient client, _, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string newEmail = NewEmail();
 
         HttpResponseMessage response =
@@ -149,7 +149,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_EmailOfAnotherAccount_Returns422()
     {
         (HttpClient client, _, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         using HttpClient anonymous = factory.CreateClient();
         string taken = await ConfirmedAccountAsync(anonymous);
 
@@ -163,7 +163,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_SameEmailAsTheCurrentOne_Returns422()
     {
         (HttpClient client, string email, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
 
         HttpResponseMessage response =
             await client.PostAsJsonAsync(s_request, new { newEmail = email.ToUpperInvariant(), password = Password });
@@ -176,7 +176,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_MalformedEmail_Returns400()
     {
         (HttpClient client, _, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
 
         HttpResponseMessage response = await client.PostAsJsonAsync(s_request, new { newEmail = "ana", password = Password });
 
@@ -188,7 +188,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_EmailProviderDown_Returns503AndKeepsTheOldEmail()
     {
         (HttpClient client, string email, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         factory.Emails.FailWith = new Waggo.Domain.Exceptions.ExternalServiceException(
             Waggo.Domain.Errors.Identity.EmailErrors.SendFailed, "ses down");
         try
@@ -213,7 +213,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Confirm_WrongCode_Returns404AndKeepsTheEmail()
     {
         (HttpClient client, string email, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string code = await RequestChangeAsync(client, NewEmail());
         string wrong = code == "000000" ? "000001" : "000000";
 
@@ -230,7 +230,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Confirm_FiveWrongCodes_BlockTheRightOne()
     {
         (HttpClient client, _, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string code = await RequestChangeAsync(client, NewEmail());
         string wrong = code == "000000" ? "000001" : "000000";
         for (int attempt = 0; attempt < User.MaxEmailChangeAttempts; attempt++)
@@ -248,7 +248,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Confirm_AfterTheCodeExpired_Returns409()
     {
         (HttpClient client, string email, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string code = await RequestChangeAsync(client, NewEmail());
         using (IServiceScope scope = factory.Services.CreateScope())
         {
@@ -268,7 +268,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Request_ASecondRequestReplacesTheFirstOne()
     {
         (HttpClient client, _, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         string firstEmail = NewEmail();
         string secondEmail = NewEmail();
         string firstCode = await RequestChangeAsync(client, firstEmail);
@@ -290,7 +290,7 @@ public class EmailChangeEndpointTests(JwtPipelineWaggoApiFactory factory)
     public async Task Confirm_TheNewEmailWasTakenMeanwhile_Returns422()
     {
         (HttpClient client, _, _) = await SignedInAsync();
-        using HttpClient _ = client;
+        using HttpClient owned = client;
         using HttpClient anonymous = factory.CreateClient();
         string newEmail = NewEmail();
         string code = await RequestChangeAsync(client, newEmail);

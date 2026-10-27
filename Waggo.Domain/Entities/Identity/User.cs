@@ -27,6 +27,12 @@ public sealed class User
     /// <summary>Minimum time between two recovery emails to the same account.</summary>
     public static readonly TimeSpan PasswordResetResendCooldown = TimeSpan.FromSeconds(60);
 
+    /// <summary>How long the 6-digit code that proves ownership of a new email works.</summary>
+    public static readonly TimeSpan EmailChangeCodeLifetime = TimeSpan.FromMinutes(15);
+
+    /// <summary>Wrong email change codes allowed before the code is burned and the change must be requested again.</summary>
+    public const int MaxEmailChangeAttempts = 5;
+
     public const int MaxFailedLoginAttempts = 5;
 
     public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
@@ -66,6 +72,17 @@ public sealed class User
 
     /// <summary>Wrong codes typed for the current recovery code; reset when a new one is issued.</summary>
     public int PasswordResetAttempts { get; private set; }
+
+    /// <summary>The email the account asked to move to; it replaces <see cref="Email"/> only once its code is typed.</summary>
+    public string? PendingEmail { get; private set; }
+
+    /// <summary>Hash of the 6-digit code sent to <see cref="PendingEmail"/>; never the raw code.</summary>
+    public string? EmailChangeCodeHash { get; private set; }
+
+    public DateTimeOffset? EmailChangeCodeExpiresAt { get; private set; }
+
+    /// <summary>Wrong codes typed for the current email change; reset when a new change is requested.</summary>
+    public int EmailChangeAttempts { get; private set; }
 
     public DateTimeOffset RegisteredAt { get; private set; }
 
@@ -280,6 +297,64 @@ public sealed class User
         ArgumentException.ThrowIfNullOrWhiteSpace(newPasswordHash);
         PasswordHash = newPasswordHash;
         FailedLoginAttempts = 0;
+    }
+
+    /// <summary>
+    /// Starts an email change (RF-005): the new address is only remembered until its owner types the code. A new
+    /// request replaces any pending one. The caller has already checked the password and that the email is free.
+    /// </summary>
+    public void RequestEmailChange(string newEmail, string codeHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newEmail);
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
+
+        PendingEmail = newEmail.Trim().ToLowerInvariant();
+        EmailChangeCodeHash = codeHash;
+        EmailChangeCodeExpiresAt = now.Add(EmailChangeCodeLifetime);
+        EmailChangeAttempts = 0;
+    }
+
+    /// <summary>
+    /// Applies the pending email once the owner of its inbox presents the 6-digit code (its hash). A wrong code counts
+    /// an attempt: after <see cref="MaxEmailChangeAttempts"/> even the right one is refused until it is requested again.
+    /// </summary>
+    public WaggoResponse<User> ConfirmEmailChange(string codeHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codeHash);
+        WaggoResponse<User> response = new();
+
+        if (PendingEmail is null || EmailChangeCodeHash is null)
+        {
+            response.AddError(IdentityErrors.EmailChangeCodeInvalid);
+            return response;
+        }
+
+        if (now > EmailChangeCodeExpiresAt)
+        {
+            response.AddError(IdentityErrors.EmailChangeCodeExpired);
+            return response;
+        }
+
+        if (EmailChangeAttempts >= MaxEmailChangeAttempts)
+        {
+            response.AddError(IdentityErrors.EmailChangeAttemptsExceeded);
+            return response;
+        }
+
+        if (EmailChangeCodeHash != codeHash)
+        {
+            EmailChangeAttempts++;
+            response.AddError(IdentityErrors.EmailChangeCodeInvalid);
+            return response;
+        }
+
+        Email = PendingEmail;
+        PendingEmail = null;
+        EmailChangeCodeHash = null;
+        EmailChangeCodeExpiresAt = null;
+        EmailChangeAttempts = 0;
+        response.Data = this;
+        return response;
     }
 
     /// <summary>A wrong password; locks the account for <see cref="LockoutDuration"/> after too many in a row.</summary>

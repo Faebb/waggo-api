@@ -84,4 +84,24 @@ public static class IdentityErrors
         "Identity.PasswordUnchanged",
         "La contraseña nueva debe ser distinta de la actual.",
         ErrorType.BusinessRule);
+
+    public static readonly Error EmailUnchanged = new(
+        "Identity.EmailUnchanged",
+        "Ese ya es el correo de tu cuenta.",
+        ErrorType.BusinessRule);
+
+    public static readonly Error EmailChangeCodeInvalid = new(
+        "Identity.EmailChangeCodeInvalid",
+        "El código no es válido. Revisa que sean los 6 números del correo.",
+        ErrorType.NotFound);
+
+    public static readonly Error EmailChangeCodeExpired = new(
+        "Identity.EmailChangeCodeExpired",
+        "El código venció, pide el cambio de correo otra vez.",
+        ErrorType.Conflict);
+
+    public static readonly Error EmailChangeAttemptsExceeded = new(
+        "Identity.EmailChangeAttemptsExceeded",
+        "Demasiados intentos, pide el cambio de correo otra vez.",
+        ErrorType.BusinessRule);
 }

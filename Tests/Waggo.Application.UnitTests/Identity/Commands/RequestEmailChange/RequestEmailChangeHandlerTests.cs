@@ -129,7 +129,7 @@ public class RequestEmailChangeHandlerTests
             .SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new ExternalServiceException(EmailErrors.SendFailed, "ses down")));
 
-        await Should.ThrowAsync<ExternalServiceException>(RequestAsync);
+        await Should.ThrowAsync<ExternalServiceException>(() => RequestAsync());
 
         user.PendingEmail.ShouldBeNull();
         await _users.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
