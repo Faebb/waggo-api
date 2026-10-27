@@ -8,8 +8,16 @@ public sealed class CapturingEmailSender : IEmailSender
 {
     private readonly ConcurrentDictionary<string, string> _lastBodyByRecipient = new();
 
+    /// <summary>When set, every send throws it, like a mail provider that is down. Reset it when the test ends.</summary>
+    public Exception? FailWith { get; set; }
+
     public Task SendAsync(string to, string subject, string body, CancellationToken cancellationToken)
     {
+        if (FailWith is not null)
+        {
+            return Task.FromException(FailWith);
+        }
+
         _lastBodyByRecipient[to] = body;
         return Task.CompletedTask;
     }

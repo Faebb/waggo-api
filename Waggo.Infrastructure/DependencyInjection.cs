@@ -1,3 +1,5 @@
+using Amazon;
+using Amazon.SimpleEmailV2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,7 +74,24 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<ITokenService, JwtTokenService>();
-        services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
+
+        // RF-001: real email through Amazon SES; without a provider the email is only written to the log, which
+        // Production refuses at startup (EmailStartupGuard). AWS credentials come from the SDK's standard chain.
+        services.AddOptions<EmailOptions>()
+            .Bind(configuration.GetSection(EmailOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<EmailOptions>, EmailOptionsValidator>();
+        EmailOptions email = configuration.GetSection(EmailOptions.SectionName).Get<EmailOptions>() ?? new();
+        if (email.Provider == EmailProvider.Ses)
+        {
+            services.AddSingleton<IAmazonSimpleEmailServiceV2>(provider => new AmazonSimpleEmailServiceV2Client(
+                RegionEndpoint.GetBySystemName(provider.GetRequiredService<IOptions<EmailOptions>>().Value.Ses.Region)));
+            services.AddSingleton<IEmailSender, SesEmailSender>();
+        }
+        else
+        {
+            services.AddSingleton<IEmailSender, DevelopmentEmailSender>();
+        }
 
         // Development/Testing only (DEV-001): real test accounts to sign in with instead of the dev-user bypass.
         services.AddOptions<SeedUsersOptions>().Bind(configuration.GetSection(SeedUsersOptions.SectionName));

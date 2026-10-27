@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using Waggo.Api.Infrastructure.Responses;
 using Waggo.Api.IntegrationTests.Infrastructure;
 using Waggo.Application.Identity;
+using Waggo.Domain.Errors.Identity;
+using Waggo.Domain.Exceptions;
 
 namespace Waggo.Api.IntegrationTests.Endpoints.Identity;
 
@@ -51,6 +53,32 @@ public class IdentityEndpointTests(WaggoApiFactory factory)
             new { email = $"ana-{Guid.NewGuid():N}@mail.com", password = "short1" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Register_EmailProviderDown_Returns503AndLeavesTheEmailFreeToTryAgain()
+    {
+        using HttpClient client = factory.CreateClient();
+        string email = $"ana-{Guid.NewGuid():N}@mail.com";
+        factory.Emails.FailWith = new ExternalServiceException(EmailErrors.SendFailed, "SES is down.");
+
+        HttpResponseMessage failed;
+        try
+        {
+            failed = await client.PostAsJsonAsync(s_register, new { email, password = "Clave123!" });
+        }
+        finally
+        {
+            factory.Emails.FailWith = null;
+        }
+
+        failed.StatusCode.ShouldBe(HttpStatusCode.ServiceUnavailable);
+        WaggoApiResponse<object>? body = await failed.Content.ReadFromJsonAsync<WaggoApiResponse<object>>();
+        body!.Errors.Single().Code.ShouldBe("Email.SendFailed");
+        body.Errors.Single().Message.ShouldNotContain("SES");
+
+        HttpResponseMessage retry = await client.PostAsJsonAsync(s_register, new { email, password = "Clave123!" });
+        retry.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]

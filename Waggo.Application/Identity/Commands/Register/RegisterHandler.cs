@@ -50,12 +50,13 @@ internal sealed class RegisterHandler(
             return response;
         }
 
-        await users.AddAsync(user.Data, cancellationToken);
+        // Email first: if the provider fails, nothing is saved and the person can register again right away.
         await emailSender.SendAsync(
             user.Data.Email,
             "Confirma tu cuenta de Waggo",
             $"Confirma tu cuenta con este código: {confirmationToken}",
             cancellationToken);
+        await users.AddAsync(user.Data, cancellationToken);
 
         response.Data = UserResponse.From(user.Data);
         return response;
