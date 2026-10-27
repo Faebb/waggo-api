@@ -25,7 +25,7 @@ public static class WalkerErrors
 
     public static readonly Error InvalidRejectionReason = new(
         "Walkers.InvalidRejectionReason",
-        "Explica el motivo del rechazo (de 5 a 300 caracteres) para que el paseador sepa qué corregir.");
+        "El motivo del rechazo puede tener máximo 300 caracteres.");
 
     public static readonly Error AlreadyRegistered = new(
         "Walkers.AlreadyRegistered",

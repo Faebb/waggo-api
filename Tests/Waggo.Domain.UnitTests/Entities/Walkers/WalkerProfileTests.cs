@@ -78,9 +78,21 @@ public class WalkerProfileTests
         (profile.Status, profile.RejectionReason).ShouldBe((VerificationStatus.Rejected, "Documento ilegible"));
     }
 
+    [Theory]
+    [InlineData(" ")]
+    [InlineData(null)]
+    public void Reject_WithoutAReason_RejectsWithoutReason(string? reason)
+    {
+        WalkerProfile profile = Register().Data;
+
+        profile.Reject("admin-1", reason!, s_now).IsValid.ShouldBeTrue();
+
+        (profile.Status, profile.RejectionReason).ShouldBe((VerificationStatus.Rejected, null));
+    }
+
     [Fact]
-    public void Reject_WithoutAReason_Fails() =>
-        Register().Data.Reject("admin-1", " ", s_now)
+    public void Reject_ReasonTooLong_Fails() =>
+        Register().Data.Reject("admin-1", new string('a', WalkerProfile.MaxRejectionReasonLength + 1), s_now)
             .Errors.Single().Code.ShouldBe(WalkerErrors.InvalidRejectionReason.Code);
 
     [Fact]

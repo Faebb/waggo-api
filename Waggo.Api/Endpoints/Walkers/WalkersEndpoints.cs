@@ -110,7 +110,7 @@ internal static class WalkersEndpoints
         CancellationToken cancellationToken)
     {
         WaggoResponse<WalkerProfileResponse> response =
-            await handler.HandleAsync(new RejectWalkerCommand(id, request.Reason ?? string.Empty), cancellationToken);
+            await handler.HandleAsync(new RejectWalkerCommand(id, request.Reason), cancellationToken);
         response.WriteLogs(logger, "RejectWalker");
         return response.ToApiResult();
     }
