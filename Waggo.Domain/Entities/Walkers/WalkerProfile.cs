@@ -14,7 +14,6 @@ public sealed partial class WalkerProfile
     public const int MinFullNameLength = 3;
     public const int MaxFullNameLength = 100;
     public const int MaxExperienceLength = 500;
-    public const int MinRejectionReasonLength = 5;
     public const int MaxRejectionReasonLength = 300;
 
     // Used by EF Core to materialize the entity.
@@ -127,13 +126,13 @@ public sealed partial class WalkerProfile
         return response;
     }
 
-    /// <summary>An admin rejects the walker, saying why so they know what to fix.</summary>
-    public WaggoResponse<WalkerProfile> Reject(string reviewerId, string reason, DateTimeOffset now)
+    /// <summary>An admin rejects the walker; the reason is optional and a blank one is stored as none.</summary>
+    public WaggoResponse<WalkerProfile> Reject(string reviewerId, string? reason, DateTimeOffset now)
     {
         WaggoResponse<WalkerProfile> response = new();
-        string why = reason?.Trim() ?? string.Empty;
+        string? why = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
 
-        if (why.Length is < MinRejectionReasonLength or > MaxRejectionReasonLength)
+        if (why?.Length > MaxRejectionReasonLength)
         {
             response.AddError(WalkerErrors.InvalidRejectionReason);
             return response;
