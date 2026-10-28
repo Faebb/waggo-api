@@ -54,6 +54,11 @@ internal static class IdentityEndpoints
             .WithRequestValidation<GoogleLoginRequest>()
             .Produces<WaggoApiResponse<SessionResponse>>();
 
+        group.MapPost("/login/microsoft", MicrosoftLoginAsync)
+            .WithName("MicrosoftLogin")
+            .WithRequestValidation<MicrosoftLoginRequest>()
+            .Produces<WaggoApiResponse<SessionResponse>>();
+
         group.MapPost("/refresh", RefreshAsync)
             .WithName("Refresh")
             .WithRequestValidation<RefreshRequest>()
@@ -129,6 +134,17 @@ internal static class IdentityEndpoints
     {
         WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "GoogleLogin");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> MicrosoftLoginAsync(
+        MicrosoftLoginRequest request,
+        ICommandHandler<LoginWithExternalProviderCommand, SessionResponse> handler,
+        ILogger<MicrosoftLoginRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "MicrosoftLogin");
         return response.ToApiResult();
     }
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -29,7 +28,6 @@ public sealed class GoogleIdentityProvider(
     public const string DiscoveryUrl = "https://accounts.google.com/.well-known/openid-configuration";
 
     private static readonly string[] s_issuers = ["https://accounts.google.com", "accounts.google.com"];
-    private static readonly TimeSpan s_clockSkew = TimeSpan.FromMinutes(2);
     private static readonly JsonWebTokenHandler s_handler = new();
 
     public ExternalProvider Provider => ExternalProvider.Google;
@@ -66,8 +64,8 @@ public sealed class GoogleIdentityProvider(
             return response;
         }
 
-        string? subject = ClaimText(result, JwtRegisteredClaimNames.Sub);
-        string? email = ClaimText(result, JwtRegisteredClaimNames.Email);
+        string? subject = IdTokenClaims.Text(result, JwtRegisteredClaimNames.Sub);
+        string? email = IdTokenClaims.Text(result, JwtRegisteredClaimNames.Email);
         if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(email))
         {
             response.AddError(IdentityErrors.ExternalTokenInvalid);
@@ -75,7 +73,7 @@ public sealed class GoogleIdentityProvider(
         }
 
         bool emailVerified =
-            string.Equals(ClaimText(result, "email_verified"), "true", StringComparison.OrdinalIgnoreCase);
+            string.Equals(IdTokenClaims.Text(result, "email_verified"), "true", StringComparison.OrdinalIgnoreCase);
         response.Data = new ExternalIdentity(subject, email, emailVerified);
         return response;
     }
@@ -89,18 +87,6 @@ public sealed class GoogleIdentityProvider(
         RequireSignedTokens = true,
         RequireExpirationTime = true,
         ValidateLifetime = true,
-        LifetimeValidator = (notBefore, expires, _, _) =>
-        {
-            DateTime now = timeProvider.GetUtcNow().UtcDateTime;
-            return expires is not null
-                && expires > now - s_clockSkew
-                && (notBefore is null || notBefore <= now + s_clockSkew);
-        },
+        LifetimeValidator = IdTokenClaims.Lifetime(timeProvider),
     };
-
-    /// <summary>Google sends <c>email_verified</c> as a JSON boolean; other libraries stringify it. Read both.</summary>
-    private static string? ClaimText(TokenValidationResult result, string name) =>
-        result.Claims.TryGetValue(name, out object? value)
-            ? Convert.ToString(value, CultureInfo.InvariantCulture)
-            : null;
 }
