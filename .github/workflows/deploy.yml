@@ -1,0 +1,121 @@
+name: Deploy
+
+# Every merge to main (a PR with green CI, see ci.yml) is published to AWS (ADR-020, INF-001):
+# image to ECR -> database migrations as a one-off ECS task -> new task definition -> smoke test.
+# AWS access is OIDC only: no access keys are stored in GitHub.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Rollback: redeploy the image already in ECR with this tag (a commit SHA). Leave empty to build HEAD."
+        required: false
+
+# Two deploys never run at once; a newer one waits for the one in progress.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  # Repository variable (Settings > Secrets and variables > Actions > Variables): keeps the AWS account id out of the
+  # public repo. It is not a secret: the role only trusts this repo's main branch through OIDC.
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  ECR_REPOSITORY: waggo-api
+  CLUSTER: waggo
+  SERVICE: waggo-api
+  TASK_FAMILY: waggo-api
+  STACK: WaggoApi
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Image tag
+        id: tag
+        run: echo "value=${{ inputs.image_tag || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push the image (skipped on rollback)
+        if: inputs.image_tag == ''
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/${ECR_REPOSITORY}:${{ steps.tag.outputs.value }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Read the stack outputs
+        id: stack
+        run: |
+          out() { aws cloudformation describe-stacks --stack-name "$STACK" \
+            --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
+          {
+            echo "subnets=$(out TaskSubnetIds)"
+            echo "security_group=$(out TaskSecurityGroupId)"
+            echo "lb_dns=$(out LoadBalancerDns)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Register a task definition revision with the new image
+        id: taskdef
+        run: |
+          IMAGE="${{ steps.ecr.outputs.registry }}/${ECR_REPOSITORY}:${{ steps.tag.outputs.value }}"
+          NEW="$(aws ecs describe-task-definition --task-definition "$TASK_FAMILY" --query taskDefinition \
+            | jq --arg image "$IMAGE" \
+              'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+               | .containerDefinitions[0].image = $image')"
+          ARN="$(aws ecs register-task-definition --cli-input-json "$NEW" --query taskDefinition.taskDefinitionArn --output text)"
+          echo "arn=$ARN" >> "$GITHUB_OUTPUT"
+
+      - name: Apply the database migrations (one-off task, same image)
+        run: |
+          TASK_ARN="$(aws ecs run-task --cluster "$CLUSTER" --launch-type FARGATE \
+            --task-definition "${{ steps.taskdef.outputs.arn }}" \
+            --network-configuration "awsvpcConfiguration={subnets=[${{ steps.stack.outputs.subnets }}],securityGroups=[${{ steps.stack.outputs.security_group }}],assignPublicIp=ENABLED}" \
+            --overrides '{"containerOverrides":[{"name":"api","command":["dotnet","Waggo.Api.dll","--migrate-only"]}]}' \
+            --query 'tasks[0].taskArn' --output text)"
+          echo "Migration task: $TASK_ARN"
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK_ARN"
+          EXIT_CODE="$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)"
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::Migrations failed (exit code $EXIT_CODE). The service was not updated. See CloudWatch logs /ecs of $TASK_ARN."
+            exit 1
+          fi
+
+      - name: Update the service and wait for it to be stable
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" \
+            --task-definition "${{ steps.taskdef.outputs.arn }}" --desired-count 1 > /dev/null
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+          # The circuit breaker rolls back a bad version; stable then means "back on the old one", so check.
+          RUNNING="$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+            --query 'services[0].taskDefinition' --output text)"
+          if [ "$RUNNING" != "${{ steps.taskdef.outputs.arn }}" ]; then
+            echo "::error::The new version did not pass its health checks and ECS rolled back to $RUNNING."
+            exit 1
+          fi
+
+      - name: Smoke test
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error "http://${{ steps.stack.outputs.lb_dns }}/health/ready"; then exit 0; fi
+            sleep 10
+          done
+          echo "::error::/health/ready did not answer 200"
+          exit 1
