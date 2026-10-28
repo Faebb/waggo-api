@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Testcontainers.PostgreSql;
 using Waggo.Application.Common.Interfaces.Identity;
 
@@ -50,6 +51,13 @@ public class WaggoApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
         // RF-001: no real mail provider in tests, so a spy replaces the development sender (ADR-016).
         builder.ConfigureTestServices(services => services.AddSingleton<IEmailSender, CapturingEmailSender>());
+
+        // ADR-017: no real Google in tests; a fake validates the "idToken" (see FakeGoogleIdentityProvider).
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IExternalIdentityProvider>();
+            services.AddSingleton<IExternalIdentityProvider, FakeGoogleIdentityProvider>();
+        });
     }
 
     public CapturingEmailSender Emails => (CapturingEmailSender)Services.GetRequiredService<IEmailSender>();
