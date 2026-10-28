@@ -3,7 +3,10 @@ using Amazon.SimpleEmailV2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Waggo.Application.Common.Interfaces.Identity;
 using Waggo.Application.Common.Interfaces.Messaging;
 using Waggo.Application.Common.Interfaces.Notifications;
@@ -71,6 +74,18 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
+
+        // ADR-017: sign in with Google. The OpenID discovery document (signing keys) is cached and refreshed.
+        services.AddOptions<GoogleAuthOptions>().Bind(configuration.GetSection(GoogleAuthOptions.SectionName));
+        services.AddSingleton<IExternalIdentityProvider>(provider => new GoogleIdentityProvider(
+            provider.GetRequiredService<IOptions<GoogleAuthOptions>>(),
+            new ConfigurationManager<OpenIdConnectConfiguration>(
+                GoogleIdentityProvider.DiscoveryUrl,
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever { RequireHttps = true }),
+            provider.GetRequiredService<TimeProvider>(),
+            provider.GetRequiredService<ILogger<GoogleIdentityProvider>>()));
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<ITokenService, JwtTokenService>();

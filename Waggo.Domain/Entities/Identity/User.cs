@@ -130,6 +130,55 @@ public sealed class User
     }
 
     /// <summary>
+    /// An account created by signing in with Google or Microsoft (ADR-017): the provider already verified the email,
+    /// so it starts confirmed. It has no password of its own: <paramref name="unusablePasswordHash"/> is the hash of a
+    /// random secret nobody knows (the person can set a real password later with "forgot password").
+    /// </summary>
+    public static WaggoResponse<User> RegisterExternal(string email, string unusablePasswordHash, DateTimeOffset now)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(unusablePasswordHash);
+        WaggoResponse<User> response = new();
+
+        string normalizedEmail = email?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (normalizedEmail.Length == 0)
+        {
+            response.AddError(IdentityErrors.InvalidEmail);
+            return response;
+        }
+
+        response.Data = new User
+        {
+            Id = Guid.CreateVersion7(now),
+            Email = normalizedEmail,
+            PasswordHash = unusablePasswordHash,
+            EmailConfirmed = true,
+            IsAdmin = false,
+            RegisteredAt = now,
+        };
+        return response;
+    }
+
+    /// <summary>
+    /// The provider proved the owner of this email. If the account was never confirmed, whoever registered it may not
+    /// own the inbox, so the password they chose is replaced by an unusable one (pre-hijacking). A confirmed account
+    /// keeps its password.
+    /// </summary>
+    public void ConfirmByExternalProvider(string unusablePasswordHash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(unusablePasswordHash);
+        if (EmailConfirmed)
+        {
+            return;
+        }
+
+        EmailConfirmed = true;
+        PasswordHash = unusablePasswordHash;
+        ConfirmationTokenHash = null;
+        ConfirmationTokenExpiresAt = null;
+        ConfirmationAttempts = 0;
+    }
+
+    /// <summary>
     /// A provisioned account that skips the confirmation email: for seeding a known admin in Development/Testing,
     /// never for the RF-001 self-registration flow (<see cref="Register"/>).
     /// </summary>

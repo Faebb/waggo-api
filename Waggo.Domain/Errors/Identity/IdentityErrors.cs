@@ -104,4 +104,18 @@ public static class IdentityErrors
         "Identity.EmailChangeAttemptsExceeded",
         "Demasiados intentos, pide el cambio de correo otra vez.",
         ErrorType.BusinessRule);
+
+    public static readonly Error ExternalTokenInvalid = new(
+        "Identity.ExternalTokenInvalid",
+        "No pudimos validar tu cuenta de Google o Microsoft, intenta de nuevo.");
+
+    public static readonly Error ExternalEmailNotVerified = new(
+        "Identity.ExternalEmailNotVerified",
+        "Tu cuenta de Google o Microsoft no tiene el correo verificado. Verifícalo allí e intenta de nuevo.",
+        ErrorType.BusinessRule);
+
+    public static readonly Error ExternalProviderUnavailable = new(
+        "Identity.ExternalProviderUnavailable",
+        "No pudimos conectar con Google o Microsoft en este momento. Intenta de nuevo en unos minutos.",
+        ErrorType.ServiceUnavailable);
 }

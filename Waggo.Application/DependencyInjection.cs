@@ -7,6 +7,7 @@ using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.ConfirmEmailChange;
 using Waggo.Application.Identity.Commands.ForgotPassword;
 using Waggo.Application.Identity.Commands.Login;
+using Waggo.Application.Identity.Commands.LoginWithExternalProvider;
 using Waggo.Application.Identity.Commands.Logout;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
@@ -74,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RequestEmailChangeCommand, bool>, RequestEmailChangeHandler>();
         services.AddScoped<ICommandHandler<ConfirmEmailChangeCommand, bool>, ConfirmEmailChangeHandler>();
         services.AddScoped<ICommandHandler<LoginCommand, SessionResponse>, LoginHandler>();
+        services.AddScoped<ICommandHandler<LoginWithExternalProviderCommand, SessionResponse>, LoginWithExternalProviderHandler>();
         services.AddScoped<ICommandHandler<RefreshSessionCommand, SessionResponse>, RefreshSessionHandler>();
         services.AddScoped<IQueryHandler<GetMyProfileQuery, UserProfileResponse>, GetMyProfileHandler>();
         services.AddScoped<ICommandHandler<UpdateMyProfileCommand, UserProfileResponse>, UpdateMyProfileHandler>();
