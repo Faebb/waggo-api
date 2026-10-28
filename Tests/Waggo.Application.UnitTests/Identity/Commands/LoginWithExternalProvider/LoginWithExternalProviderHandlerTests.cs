@@ -169,6 +169,30 @@ public class LoginWithExternalProviderHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_SeveralProviders_UsesTheOneTheRequestAsksFor()
+    {
+        IExternalIdentityProvider microsoft = Substitute.For<IExternalIdentityProvider>();
+        microsoft.Provider.Returns(ExternalProvider.Microsoft);
+        microsoft.ValidateAsync("id-token", Arg.Any<CancellationToken>()).Returns(new WaggoResponse<ExternalIdentity>
+        {
+            Data = new ExternalIdentity("tenant:object-1", "ana@mail.com", true),
+        });
+        LoginWithExternalProviderHandler sut = new(
+            [_google, microsoft], _externalLogins, _users, _walkerProfiles, _refreshTokens, _passwordHasher,
+            _tokenGenerator, _tokenService, new FixedTimeProvider());
+
+        WaggoResponse<SessionResponse> result =
+            await sut.HandleAsync(new LoginWithExternalProviderCommand(ExternalProvider.Microsoft, "id-token"), CancellationToken.None);
+
+        result.IsValid.ShouldBeTrue();
+        await microsoft.Received(1).ValidateAsync("id-token", Arg.Any<CancellationToken>());
+        await _google.DidNotReceive().ValidateAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _externalLogins.Received(1).AddAsync(
+            Arg.Is<ExternalLogin>(l => l.Provider == ExternalProvider.Microsoft && l.ProviderUserId == "tenant:object-1"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task HandleAsync_NoProviderRegisteredForTheRequest_FailsWithExternalTokenInvalid()
     {
         WaggoResponse<SessionResponse> result = await _sut.HandleAsync(

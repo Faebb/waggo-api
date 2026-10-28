@@ -27,7 +27,7 @@ public class GoogleLoginEndpointTests(WaggoApiFactory factory)
     public async Task Login_NewEmail_CreatesTheAccountAndIssuesASession()
     {
         using HttpClient client = factory.CreateClient();
-        string token = FakeGoogleIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", NewEmail());
+        string token = FakeExternalIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", NewEmail());
 
         HttpResponseMessage response = await client.PostAsJsonAsync(s_google, new { idToken = token });
 
@@ -43,7 +43,7 @@ public class GoogleLoginEndpointTests(WaggoApiFactory factory)
     public async Task Login_SameGoogleAccountTwice_EntersTheSameAccount()
     {
         using HttpClient client = factory.CreateClient();
-        string token = FakeGoogleIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", NewEmail());
+        string token = FakeExternalIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", NewEmail());
 
         HttpResponseMessage first = await client.PostAsJsonAsync(s_google, new { idToken = token });
         HttpResponseMessage second = await client.PostAsJsonAsync(s_google, new { idToken = token });
@@ -63,7 +63,7 @@ public class GoogleLoginEndpointTests(WaggoApiFactory factory)
             new { email, code = factory.Emails.LastConfirmationCodeSentTo(email) });
 
         HttpResponseMessage google = await client.PostAsJsonAsync(
-            s_google, new { idToken = FakeGoogleIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", email) });
+            s_google, new { idToken = FakeExternalIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", email) });
         HttpResponseMessage password = await client.PostAsJsonAsync(s_login, new { email, password = "Clave123!" });
 
         google.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -78,7 +78,7 @@ public class GoogleLoginEndpointTests(WaggoApiFactory factory)
         await client.PostAsJsonAsync(s_register, new { email, password = "AttackerPass1" });
 
         HttpResponseMessage google = await client.PostAsJsonAsync(
-            s_google, new { idToken = FakeGoogleIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", email) });
+            s_google, new { idToken = FakeExternalIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", email) });
         HttpResponseMessage oldPassword =
             await client.PostAsJsonAsync(s_login, new { email, password = "AttackerPass1" });
 
@@ -102,7 +102,7 @@ public class GoogleLoginEndpointTests(WaggoApiFactory factory)
     public async Task Login_EmailNotVerifiedByGoogle_Returns422()
     {
         using HttpClient client = factory.CreateClient();
-        string token = FakeGoogleIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", NewEmail(), emailVerified: false);
+        string token = FakeExternalIdentityProvider.TokenFor($"sub-{Guid.NewGuid():N}", NewEmail(), emailVerified: false);
 
         HttpResponseMessage response = await client.PostAsJsonAsync(s_google, new { idToken = token });
 

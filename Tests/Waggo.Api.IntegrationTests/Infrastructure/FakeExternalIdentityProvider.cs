@@ -7,12 +7,12 @@ using Waggo.Domain.Errors.Identity;
 namespace Waggo.Api.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Stands in for Google in the integration tests (no real provider is reachable from a test run). The "token" is
-/// <c>ok|sub|email|verified</c>; anything else is rejected, like a forged or expired <c>idToken</c>.
+/// Stands in for Google or Microsoft in the integration tests (no real provider is reachable from a test run). The
+/// "token" is <c>ok|id|email|verified</c>; anything else is rejected, like a forged or expired <c>idToken</c>.
 /// </summary>
-public sealed class FakeGoogleIdentityProvider : IExternalIdentityProvider
+public sealed class FakeExternalIdentityProvider(ExternalProvider provider) : IExternalIdentityProvider
 {
-    public ExternalProvider Provider => ExternalProvider.Google;
+    public ExternalProvider Provider => provider;
 
     public static string TokenFor(string providerUserId, string email, bool emailVerified = true) =>
         $"ok|{providerUserId}|{email}|{emailVerified}";
