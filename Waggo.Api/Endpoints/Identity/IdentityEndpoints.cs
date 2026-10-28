@@ -7,6 +7,7 @@ using Waggo.Application.Identity;
 using Waggo.Application.Identity.Commands.ConfirmEmail;
 using Waggo.Application.Identity.Commands.ForgotPassword;
 using Waggo.Application.Identity.Commands.Login;
+using Waggo.Application.Identity.Commands.LoginWithExternalProvider;
 using Waggo.Application.Identity.Commands.Logout;
 using Waggo.Application.Identity.Commands.RefreshSession;
 using Waggo.Application.Identity.Commands.Register;
@@ -46,6 +47,11 @@ internal static class IdentityEndpoints
         group.MapPost("/login", LoginAsync)
             .WithName("Login")
             .WithRequestValidation<LoginRequest>()
+            .Produces<WaggoApiResponse<SessionResponse>>();
+
+        group.MapPost("/login/google", GoogleLoginAsync)
+            .WithName("GoogleLogin")
+            .WithRequestValidation<GoogleLoginRequest>()
             .Produces<WaggoApiResponse<SessionResponse>>();
 
         group.MapPost("/refresh", RefreshAsync)
@@ -112,6 +118,17 @@ internal static class IdentityEndpoints
     {
         WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
         response.WriteLogs(logger, "Login");
+        return response.ToApiResult();
+    }
+
+    private static async Task<IResult> GoogleLoginAsync(
+        GoogleLoginRequest request,
+        ICommandHandler<LoginWithExternalProviderCommand, SessionResponse> handler,
+        ILogger<GoogleLoginRequest> logger,
+        CancellationToken cancellationToken)
+    {
+        WaggoResponse<SessionResponse> response = await handler.HandleAsync(request.ToCommand(), cancellationToken);
+        response.WriteLogs(logger, "GoogleLogin");
         return response.ToApiResult();
     }
 

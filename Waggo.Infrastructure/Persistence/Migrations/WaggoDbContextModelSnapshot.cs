@@ -25,6 +25,45 @@ namespace Waggo.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Waggo.Domain.Entities.Identity.ExternalLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("ProviderUserId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("provider_user_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_external_logins");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_external_logins_user_id");
+
+                    b.HasIndex("Provider", "ProviderUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_external_logins_provider_provider_user_id");
+
+                    b.ToTable("external_logins", "identity");
+                });
+
             modelBuilder.Entity("Waggo.Domain.Entities.Identity.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -739,6 +778,16 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_walks_walker_id");
 
                     b.ToTable("walks", "walks");
+                });
+
+            modelBuilder.Entity("Waggo.Domain.Entities.Identity.ExternalLogin", b =>
+                {
+                    b.HasOne("Waggo.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_external_logins_users_user_id");
                 });
 
             modelBuilder.Entity("Waggo.Domain.Entities.Payments.WalkPayment", b =>

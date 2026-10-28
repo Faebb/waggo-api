@@ -20,6 +20,8 @@ public sealed class WaggoDbContext(DbContextOptions<WaggoDbContext> options, Aes
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public DbSet<ExternalLogin> ExternalLogins => Set<ExternalLogin>();
+
     public DbSet<Pet> Pets => Set<Pet>();
 
     public DbSet<Walk> Walks => Set<Walk>();

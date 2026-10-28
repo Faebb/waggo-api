@@ -1,6 +1,5 @@
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Identity;
-using Waggo.Domain.Errors.Identity;
 
 namespace Waggo.Domain.UnitTests.Entities.Identity;
 
