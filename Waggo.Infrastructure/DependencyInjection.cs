@@ -86,6 +86,17 @@ public static class DependencyInjection
                 new HttpDocumentRetriever { RequireHttps = true }),
             provider.GetRequiredService<TimeProvider>(),
             provider.GetRequiredService<ILogger<GoogleIdentityProvider>>()));
+
+        // ADR-017: sign in with Microsoft (personal, work and school accounts: the "common" tenant).
+        services.AddOptions<MicrosoftAuthOptions>().Bind(configuration.GetSection(MicrosoftAuthOptions.SectionName));
+        services.AddSingleton<IExternalIdentityProvider>(provider => new MicrosoftIdentityProvider(
+            provider.GetRequiredService<IOptions<MicrosoftAuthOptions>>(),
+            new ConfigurationManager<OpenIdConnectConfiguration>(
+                MicrosoftIdentityProvider.DiscoveryUrl,
+                new OpenIdConnectConfigurationRetriever(),
+                new HttpDocumentRetriever { RequireHttps = true }),
+            provider.GetRequiredService<TimeProvider>(),
+            provider.GetRequiredService<ILogger<MicrosoftIdentityProvider>>()));
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
         services.AddSingleton<ITokenService, JwtTokenService>();
