@@ -14,7 +14,7 @@ using Waggo.Infrastructure.Persistence.Context;
 namespace Waggo.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(WaggoDbContext))]
-    [Migration("20261023210743_AddPaymentMethods")]
+    [Migration("20261028025826_AddPaymentMethods")]
     partial class AddPaymentMethods
     {
         /// <inheritdoc />
@@ -27,43 +27,6 @@ namespace Waggo.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("Waggo.Domain.Entities.Identity.LoginChallenge", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<int>("Attempts")
-                        .HasColumnType("integer")
-                        .HasColumnName("attempts");
-
-                    b.Property<string>("CodeHash")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("code_hash");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<bool>("Used")
-                        .HasColumnType("boolean")
-                        .HasColumnName("used");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_login_challenges");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_login_challenges_user_id");
-
-                    b.ToTable("login_challenges", "identity");
-                });
 
             modelBuilder.Entity("Waggo.Domain.Entities.Identity.RefreshToken", b =>
                 {
@@ -112,6 +75,10 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("ConfirmationAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("confirmation_attempts");
+
                     b.Property<DateTimeOffset?>("ConfirmationTokenExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmation_token_expires_at");
@@ -127,6 +94,19 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("email");
 
+                    b.Property<int>("EmailChangeAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("email_change_attempts");
+
+                    b.Property<DateTimeOffset?>("EmailChangeCodeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_change_code_expires_at");
+
+                    b.Property<string>("EmailChangeCodeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("email_change_code_hash");
+
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean")
                         .HasColumnName("email_confirmed");
@@ -134,6 +114,11 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                     b.Property<int>("FailedLoginAttempts")
                         .HasColumnType("integer")
                         .HasColumnName("failed_login_attempts");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("full_name");
 
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("boolean")
@@ -148,15 +133,35 @@ namespace Waggo.Infrastructure.Persistence.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<int>("PasswordResetAttempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("password_reset_attempts");
+
+                    b.Property<DateTimeOffset?>("PasswordResetCodeExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_code_expires_at");
+
+                    b.Property<string>("PasswordResetCodeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("password_reset_code_hash");
+
+                    b.Property<string>("PendingEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("pending_email");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("phone");
+
                     b.Property<DateTimeOffset>("RegisteredAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("registered_at");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
-
-                    b.HasIndex("ConfirmationTokenHash")
-                        .HasDatabaseName("ix_users_confirmation_token_hash");
 
                     b.HasIndex("Email")
                         .IsUnique()
