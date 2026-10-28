@@ -11,6 +11,12 @@ builder.Services
 
 WebApplication app = builder.Build();
 
+if (StartupArguments.IsMigrateOnly(args))
+{
+    await app.Services.MigrateDatabaseAsync(CancellationToken.None);
+    return;
+}
+
 app.UseWaggoPipeline();
 app.MapWaggoEndpoints();
 await app.MigrateDatabaseIfLocalAsync();
