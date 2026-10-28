@@ -1,4 +1,6 @@
+using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Walks;
@@ -6,7 +8,10 @@ using Waggo.Domain.Entities.Walks;
 namespace Waggo.Application.Walks.Queries.ListAssignedWalks;
 
 /// <summary>RF-007: the walker sees the walks they accepted.</summary>
-internal sealed class ListAssignedWalksHandler(IWalkRepository walks, ICurrentUser currentUser)
+internal sealed class ListAssignedWalksHandler(
+    IWalkRepository walks,
+    IWalkerProfileRepository walkerProfiles,
+    ICurrentUser currentUser)
     : IQueryHandler<ListAssignedWalksQuery, IReadOnlyList<WalkResponse>>
 {
     public async Task<WaggoResponse<IReadOnlyList<WalkResponse>>> HandleAsync(
@@ -14,6 +19,9 @@ internal sealed class ListAssignedWalksHandler(IWalkRepository walks, ICurrentUs
         CancellationToken cancellationToken)
     {
         IReadOnlyList<Walk> assigned = await walks.ListByWalkerAsync(currentUser.Id, cancellationToken);
-        return new WaggoResponse<IReadOnlyList<WalkResponse>> { Data = [.. assigned.Select(WalkResponse.From)] };
+        return new WaggoResponse<IReadOnlyList<WalkResponse>>
+        {
+            Data = await walkerProfiles.ToWalkResponsesAsync(assigned, cancellationToken),
+        };
     }
 }

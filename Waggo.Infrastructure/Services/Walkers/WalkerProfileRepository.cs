@@ -17,6 +17,13 @@ internal sealed class WalkerProfileRepository(WaggoDbContext db) : IWalkerProfil
     public Task<WalkerProfile?> GetByUserAsync(string userId, CancellationToken cancellationToken) =>
         db.WalkerProfiles.AsNoTracking().FirstOrDefaultAsync(profile => profile.UserId == userId, cancellationToken);
 
+    public async Task<IReadOnlyList<WalkerProfile>> ListByUsersAsync(
+        IReadOnlyCollection<string> userIds,
+        CancellationToken cancellationToken) =>
+        await db.WalkerProfiles.AsNoTracking()
+            .Where(profile => userIds.Contains(profile.UserId))
+            .ToListAsync(cancellationToken);
+
     public Task<WalkerProfile?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.WalkerProfiles.FirstOrDefaultAsync(profile => profile.Id == id, cancellationToken);
 

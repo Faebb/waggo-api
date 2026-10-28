@@ -147,7 +147,7 @@ public class WalksEndpointTests(WaggoApiFactory factory)
 
         HttpResponseMessage response = await client.PostAsJsonAsync(
             s_walks,
-            WalkRequest([luna], scheduledFor: DateTimeOffset.UtcNow.AddDays(15)));
+            WalkRequest([luna], scheduledFor: DateTimeOffset.UtcNow.AddDays(6)));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         await ShouldHaveSingleErrorAsync(response, "Walks.InvalidSchedule");

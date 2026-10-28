@@ -1,6 +1,8 @@
+using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.Common.Models.Payments;
 using Waggo.Domain.Common;
@@ -23,6 +25,7 @@ internal sealed class FinishWalkHandler(
     IWalkPaymentRepository payments,
     IPaymentGateway gateway,
     INotificationRepository notifications,
+    IWalkerProfileRepository walkerProfiles,
     ICurrentUser currentUser,
     TimeProvider timeProvider)
     : ICommandHandler<FinishWalkCommand, WalkResponse>
@@ -79,7 +82,7 @@ internal sealed class FinishWalkHandler(
         }
 
         await notifications.AddRangeAsync(notices, cancellationToken);
-        response.Data = WalkResponse.From(walk);
+        response.Data = await walkerProfiles.ToWalkResponseAsync(walk, cancellationToken);
         return response;
     }
 }

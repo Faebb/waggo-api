@@ -1,4 +1,6 @@
+using Waggo.Application.Common.Extensions;
 using Waggo.Application.Common.Interfaces;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Domain.Common;
 using Waggo.Domain.Entities.Walks;
@@ -10,7 +12,10 @@ namespace Waggo.Application.Walks.Queries.GetWalk;
 /// <summary>
 /// RF-007: detail of a walk for its owner (who polls it to see when a walker accepts) or for the walker who took it.
 /// </summary>
-internal sealed class GetWalkHandler(IWalkRepository walks, ICurrentUser currentUser)
+internal sealed class GetWalkHandler(
+    IWalkRepository walks,
+    IWalkerProfileRepository walkerProfiles,
+    ICurrentUser currentUser)
     : IQueryHandler<GetWalkQuery, WalkResponse>
 {
     public async Task<WaggoResponse<WalkResponse>> HandleAsync(GetWalkQuery query, CancellationToken cancellationToken)
@@ -25,6 +30,9 @@ internal sealed class GetWalkHandler(IWalkRepository walks, ICurrentUser current
             throw new NotFoundException(WalkErrors.NotFound, $"Walk {query.Id} not found for {currentUser.Id}");
         }
 
-        return new WaggoResponse<WalkResponse> { Data = WalkResponse.From(walk) };
+        return new WaggoResponse<WalkResponse>
+        {
+            Data = await walkerProfiles.ToWalkResponseAsync(walk, cancellationToken),
+        };
     }
 }

@@ -1,3 +1,4 @@
+using Waggo.Domain.Entities.Walkers;
 using Waggo.Domain.Entities.Walks;
 
 namespace Waggo.Application.Walks;
@@ -21,11 +22,20 @@ public sealed record WalkResponse(
     string? WalkerId,
     DateTimeOffset RequestedAt,
     DateTimeOffset? StartedAt,
-    DateTimeOffset? FinishedAt)
+    DateTimeOffset? FinishedAt,
+    AssignedWalkerResponse? Walker)
 {
-    public static WalkResponse From(Walk walk)
+    /// <summary>
+    /// Builds the response. <paramref name="walkerProfile"/> is the profile of the assigned walker, if any;
+    /// <see cref="Walker"/> is null only when nobody accepted the walk.
+    /// </summary>
+    public static WalkResponse From(Walk walk, WalkerProfile? walkerProfile)
     {
         ArgumentNullException.ThrowIfNull(walk);
+        AssignedWalkerResponse? walker = walk.WalkerId is null
+            ? null
+            : new AssignedWalkerResponse(walk.WalkerId, walkerProfile?.FullName);
+
         return new WalkResponse(
             walk.Id,
             walk.Status.ToString(),
@@ -44,6 +54,7 @@ public sealed record WalkResponse(
             walk.WalkerId,
             walk.RequestedAt,
             walk.StartedAt,
-            walk.FinishedAt);
+            walk.FinishedAt,
+            walker);
     }
 }

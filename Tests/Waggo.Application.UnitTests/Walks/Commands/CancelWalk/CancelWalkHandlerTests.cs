@@ -1,6 +1,7 @@
 using Waggo.Application.Common.Interfaces;
 using Waggo.Application.Common.Interfaces.Notifications;
 using Waggo.Application.Common.Interfaces.Payments;
+using Waggo.Application.Common.Interfaces.Walkers;
 using Waggo.Application.Common.Interfaces.Walks;
 using Waggo.Application.UnitTests.TestData;
 using Waggo.Application.UnitTests.TestDoubles;
@@ -25,12 +26,20 @@ public class CancelWalkHandlerTests
     private readonly IPaymentGateway _gateway = PaymentMother.ApprovingGateway();
     private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
+    private readonly IWalkerProfileRepository _walkerProfiles = Substitute.For<IWalkerProfileRepository>();
     private readonly CancelWalkHandler _sut;
 
     public CancelWalkHandlerTests()
     {
         _currentUser.Id.Returns("owner-1");
-        _sut = new CancelWalkHandler(_walks, _payments, _gateway, _notifications, _currentUser, new FixedTimeProvider());
+        _sut = new CancelWalkHandler(
+            _walks,
+            _payments,
+            _gateway,
+            _notifications,
+            _walkerProfiles,
+            _currentUser,
+            new FixedTimeProvider());
     }
 
     [Fact]

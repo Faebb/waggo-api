@@ -1,4 +1,4 @@
 namespace Waggo.Api.Endpoints.Walkers.Requests;
 
-/// <summary>Body of <c>POST /api/v1/admin/walkers/{id}/reject</c>. The reason is checked by the domain.</summary>
+/// <summary>Body of <c>POST /api/v1/admin/walkers/{id}/reject</c>. The reason is optional; the domain checks its length.</summary>
 public sealed record RejectWalkerRequest(string? Reason);
